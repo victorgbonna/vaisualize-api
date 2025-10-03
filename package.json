@@ -1,0 +1,33 @@
+{
+  "name": "vaisualize-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node src/server.js",
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/victorgbonna/vaisualize-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/victorgbonna/vaisualize-api/issues"
+  },
+  "homepage": "https://github.com/victorgbonna/vaisualize-api#readme",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "handlebars": "^4.7.8",
+    "joi": "^18.0.1",
+    "mongoose": "^8.18.3",
+    "nodemailer": "^7.0.6",
+    "openai": "^6.1.0"
+  }
+}
