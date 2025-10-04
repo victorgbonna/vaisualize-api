@@ -28,8 +28,7 @@ const RequestSchema = new Schema(
     },
     email_attached:{
         type: String,
-        lowercase: true,
-        unique:true,
+        lowercase: true
     },
     categorical_columns: {
         type: Array,

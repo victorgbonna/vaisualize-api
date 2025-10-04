@@ -1,4 +1,5 @@
 const OpenAI = require("openai");
+const consolelog = require("../utils/consolelog");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -17,7 +18,7 @@ const generateVisualizationPlan = async (payload) =>{
         - y (or array of y’s)
         - optionally z or group_by
         - why (a short explanation)
-        Return valid JSON only, no extra text. Try to suggest visualizations that best align with the user's goal and the nature of the data. Also, try to maximize as much chart variety as possible.
+        Return an array of objects, no extra text. Try to suggest visualizations that best align with the user's goal and the nature of the data. Also, try to maximize as much chart variety as possible.
     `.trim();
 
     const userPrompt = `
@@ -32,17 +33,21 @@ const generateVisualizationPlan = async (payload) =>{
     Date columns: ${JSON.stringify(payload.date_columns)}
     Unique columns: ${JSON.stringify(payload.unique_columns)}
     `.trim();
-    const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-        ],
-        temperature: 0.0,
-        max_tokens: 500
+    const response = await openai.responses.create({
+        model: "gpt-5",
+        input: [
+            {
+                role: "developer",
+                content: systemPrompt
+            },
+            {
+                role: "user",
+                content: userPrompt
+            },
+        ]
     });
-
-    return response.choices[0].message.content;
+    // consolelog({response: response?.output_text)})
+    return response?.output_text? JSON.parse(response.output_text): [];
     }  catch (error) {
         console.log({error})
         console.error("Error generating visualization plan:", error);

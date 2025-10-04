@@ -35,7 +35,7 @@ module.exports = async function sendEmailToUser(
             }
         })        
         let details = {
-            from: `Climax Properties Ng ${MAIL_EMAIL}`,
+            from: `${MAIL_EMAIL}`,
             // to: mailTo,
             subject,
             html:htmlToSend,
@@ -51,28 +51,9 @@ module.exports = async function sendEmailToUser(
         }
         // console.log({emailDetails})
     } catch (e) {
-        
+        consolelog({e})
+        return {error:true}     
     }
     return
-    //one has to create an app password
-    // let mailTransporter = nodemailer.createTransport({
-    //   host: 'smtp.ethereal.email',
-    //   port: 587,
-    //   auth: {
-    //     user: 'cordelia85@ethereal.email',
-    //     pass: 'vcCnAHvXuHTH6fHC2h'
-    //   }
-    // })
-    // var maillist = [
-    //   '****.sharma3@****.com',
-    //   '****.bussa@****.com',
-    //   '****.gawri@****.com',
-    // ];
-    // mailTransporter.sendMail(details, (err, info)=>{
-    //     if(err){
-    //         console.log(err)
-    //     }else{
-    //         console.log('Mail successfully sent', info.response)
-    //     }
-    // })
+   
 };
