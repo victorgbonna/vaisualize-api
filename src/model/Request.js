@@ -7,6 +7,14 @@ const RequestSchema = new Schema(
         type: Array,
         required:true
     },
+    title:{
+        type: String,
+        required:true,
+    },
+    category:{
+        type: String,
+        required:true,
+    },
     description:{
         type: String,
         required:true,
@@ -15,10 +23,9 @@ const RequestSchema = new Schema(
         type: String,
         required:true,
     },
-    indices: {
-        type: Array,
-        required:true
-    },
+    // index_column: {
+    //     type: String
+    // },
     sample_data:{
         type: Array,
         required:true
@@ -42,13 +49,19 @@ const RequestSchema = new Schema(
     unique_columns: {
         type: Array,
     },
+    non_placed_columns: {
+        type: Array,
+    },
+    all_columns: {
+        type: Array,
+    },
     suggestions:{
         type: Array,
     },
     status: { 
         type: String, 
         enum:["suspended", "active", "deleted", "break"],
-        default:"active"
+        default:"break"
     },
     chatGPT_response:{
         type: Array,

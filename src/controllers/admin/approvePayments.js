@@ -31,7 +31,7 @@ module.exports = async function (req, res, next) {
     reqs[reqIndex].status="active"
     payment.requests= reqs
     await payment.save()
-    const request = await Request.findOneAndUpdate({_id:req_id},{email_attached},{new:true})
+    const request = await Request.findOneAndUpdate({_id:req_id},{email_attached, status:"active"},{new:true})
 
     sendEmailToUser({
       mailTo:request.email_attached,

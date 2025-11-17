@@ -4,10 +4,10 @@ const Request = require("../../model/Request");
 module.exports = async function (req, res, next) {
   try {
     const {id:_id}= req.params 
-    const requests= await Request.findOne({_id})
+    const request= await Request.findOne({_id, status:{$ne:"deleted"}}).sort({createdAt:-1})
     return res
       .status(200)
-      .json({ status: "success", message:"Request gotten", requests} );
+      .json({ status: "success", message:"Request gotten", request} );
   } catch (error) {
     next(error);
   }

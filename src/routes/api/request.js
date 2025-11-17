@@ -10,8 +10,8 @@ const router = require("express").Router();
 
 router.post("/prompt-visuals", promptAIVisuals); 
 router.post("/save", saveRequest);
-router.get("get/all/:user_id", getAllRequests);
-router.get("get/one/:id", getOneRequest);
+router.get("/get/all/:user_id", getAllRequests);
+router.get("/get/one/:id", getOneRequest);
 router.post("/validate/:passcode", validateAccesscode);
 router.post("/suggestions/add", addSuggestionToRequest);
 

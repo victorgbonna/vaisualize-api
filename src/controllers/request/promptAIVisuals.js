@@ -5,14 +5,20 @@ const {generateVisualizationPlan} = require("../../services/chatGPTServices")
 
 module.exports = async function (req, res, next) {
   try {
-    const request = new Request({...req.body});
-    await request.save();
-
     const visuals_sugg= await generateVisualizationPlan(req.body)
     
+    const request = new Request(
+      {...req.body, chatGPT_response: [visuals_sugg]}
+    );
+    await request.save();
+
     return res
       .status(200)
-      .json({ status: "success", message:"Request created", data:{request, visuals_sugg}} );
+      .json(
+        { 
+          status: "success", message:"Request created", 
+          data:{_id:request._id}
+        } );
   } catch (error) {
     console.log({error})
     next(error);
