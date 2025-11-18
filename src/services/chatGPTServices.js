@@ -32,10 +32,11 @@ const generateVisualizationPlan = async (payload) =>{
     * Do not include any text outside the JSON array.
     * Do not use numeric limits like “Top 10” or “Top 5” — instead use adjectives like “most”, “highest”, “dominant”, “frequent”, “largest”, or “smallest”.
     * Only include "group_by" if they’re useful or add distinct meaning. Avoid repetition.
-    * When visualizing correlations amongst a categorical column on vertical axis labelled as y(e.g player name, type) - this should just be 1 categorical column and at most 6 numerical columns on horizontal axis labelled as x(e.g speed, strength, sugar level) - this should return an array of numerical columns , use "matrix heatmap".
-    * For Radar Plots, same structure should be the same as matrix heatmap, but at most 5 numerical columns.".
+    * When visualizing correlations amongst a categorical column on vertical axis labelled as y(e.g player name or type) - this should just be 1 categorical column and at most 6 numerical columns on horizontal axis labelled as x(e.g speed, strength, sugar level) - this should return an array of numerical columns , use "matrix heatmap".
+    * For Radar Plots, same structure should be the same as matrix heatmap, but at most 5 numerical columns and the y column should be in the 'unique column' provided".
     * Be flexible: do not use a chart in more than 2 (two) places.
-    *  
+    *  omit heatmap for now, just matrix heatmap only, if it qualifies for such.  
+
     "metrics" → represents summarized numerical insights, where each item includes:
 
     label: the name or title of the metric (e.g., Average Revenue, Cleansheets Kept, Average Response Time)
