@@ -5,6 +5,7 @@ const getAllRequests = require("../../controllers/admin/requests/getAllRequests"
 const getOneRequest = require("../../controllers/admin/requests/getOneRequest");
 const getSavedEmailRequests = require("../../controllers/admin/requests/getSavedEmailRequests");
 const getSavedRequests = require("../../controllers/admin/requests/getSavedRequests");
+const { approvePaymentSchema } = require("../../middleware/validators/payment");
 
 const router = require("express").Router();
 
@@ -16,6 +17,6 @@ router.get("/request/saved/one/:id", getOneRequest);
 
 router.get("/payments", getAllPayments);
 router.get("/payments/:email", getAllPaymentsByEmail);
-router.patch("/payments/approve", approvePayments);
+router.patch("/payments/approve", approvePaymentSchema, approvePayments);
 
 module.exports = router;

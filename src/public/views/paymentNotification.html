@@ -3,7 +3,7 @@
   <body style="margin: 0; padding: 0; background-color: #f9f9f9; font-family: Arial, sans-serif;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px;">
       
-      <h2 style="margin-top: 0; color: #333333; font-size: 20px;">vAIsualize Payment Notification</h2>
+      <h2 style="margin-top: 0; color: #333333; font-size: 20px;">WebBi Payment Notification</h2>
 
       <p style="font-size: 14px; color: #444444; line-height: 1.6;">
         A payment has been made for a request.
@@ -11,11 +11,13 @@
 
       <p style="font-size: 14px; color: #444444;">
         <strong>User Email:</strong> {{userEmail}}<br>
+        <strong>User Whatsapp:</strong> {{userEmail}}<br>
         <strong>Request ID:</strong> {{requestId}}
       </p>
 
       <div style="text-align: center; margin: 30px 0;">
-        <img src="{{receiptImageUrl}}" alt="Transaction Receipt" style="max-width: 100%; border-radius: 4px; border: 1px solid #e0e0e0;">
+        <!-- <img src="{{receiptImageUrl}}" alt="Transaction Receipt" style="max-width: 100%; border-radius: 4px; border: 1px solid #e0e0e0;"> -->
+        <a href="{{receiptImageUrl}}">Click to view Receipt</a>
       </div>
 
       <hr style="margin: 30px 0; border: none; border-top: 1px solid #e0e0e0;">

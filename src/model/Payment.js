@@ -1,36 +1,40 @@
-const { required } = require("joi");
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const reqAddedSchema = new Schema(
-    {
-        req_id: { type: String , required:true},
-        proof:{type: String, required:true},
-        status:{ type: String, enum:["suspended", "active", "deleted", "break"], default:"break" },
-    },{
-        id: false
-    }
-)
-const PaymentSchema = new Schema(
+const PaymentsSchema = new Schema(
   {
-    nick_name: {
-        type: Array,
+    fullName: {
+        type: String,
         required:true
     },
     access_code:{
         type: String,
         required:true,
     },
-    email:{
+    email_attached:{
         type: String,
         lowercase: true,
         unique:true,
     },
-    requests: [reqAddedSchema],
+    whatsapp_line:{
+        type: String,
+    },
+    proof:{
+        type: String,
+        required:true
+    },
+    req_id:{
+        type: String,
+        required:true,
+    },
+    country:{
+        type: String,
+    },
+    // requests: [reqAddedSchema],
     status: { 
         type: String, 
-        enum:["suspended", "active", "deleted", "break"],
-        default:"active"
+        enum:["suspended", "active", "deleted", "break","pending",'rejected'],
+        default:"pending"
     },
     
   },
@@ -39,6 +43,6 @@ const PaymentSchema = new Schema(
   }
 );
 
-const Payment = mongoose.model("payment", PaymentSchema);
+const Payment = mongoose.model("payments", PaymentsSchema);
 
 module.exports = Payment;

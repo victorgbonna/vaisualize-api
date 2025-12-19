@@ -8,8 +8,10 @@ module.exports = async function (req, res, next) {
     const visuals_sugg= await generateVisualizationPlan(req.body)
     
     const request = new Request(
-      {...req.body, chatGPT_response: [visuals_sugg]}
+      {...req.body, ...visuals_sugg}
     );
+    // {...req.body, chatGPT_response: [visuals_sugg]}
+
     await request.save();
 
     return res

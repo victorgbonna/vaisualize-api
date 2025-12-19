@@ -6,23 +6,43 @@ const sendEmailToUser = require("../../utils/sendEmailToUser");
 module.exports = async function (req, res, next) {
   try {
     const {user_body, request_body, proof}= req.body
-    const request = new Request({...request_body});
-    await request.save();
+    
     const new_request={
-      req_id: request._id, proof
+      req_id: request_body._id, proof, access_code:request_body._id
     }
-    const payment= new Payment({...user_body, requests:[new_request]})
+    const existing_pay=await Payment.findOne({req_id:request_body._id}).lean()
+    if(existing_pay?.status==='pending'){
+        return res.status(400).json({error: {
+            message:"You already have a payment for this visual still currently pending"
+            }   
+        });
+    }
+    if(existing_pay?.status==='active'){
+        return res.status(400).json({error: {
+            message:"Payment is currently active"
+            }   
+        });
+    }
+    const payment= new Payment({...user_body, ...new_request})
     // sendemail to me so i can approve
     await payment.save();
-
+    await Request.updateOne({_id:request_body._id},{status:'pending'})
     sendEmailToUser({
-      mailTo:MAIL_EMAIL,
-      subject:"New payment made",
-      text:`A new payment has been made by ${user_body.nick_name}, email: ${user_body.email}. Please check the admin panel to approve the request. Request id: ${request._id}`
+        mailTo:MAIL_EMAIL,
+        subject:"New payment made",
+        tempPath: "public/views/paymentNotification.html",
+        replacements: {
+            userEmail: user_body.email_attached,
+            userName: user_body.fullName,
+            whatsapp_line:user_body.whatsapp_line,
+            requestId: request_body._id,
+            receiptImageUrl: proof,
+            receiptDocType: proof?.endsWith('.csv')?'doc':'img'
+        } 
     })
     return res
       .status(200)
-      .json({ status: "success", message:"Request created", data:{payment,request}} );
+      .json({ status: "success", message:"Payment created", data:{payment}} );
   } catch (error) {
     console.log({error})
     next(error);

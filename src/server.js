@@ -20,12 +20,13 @@ const db = require("./configs/constants").mongoURI;
 // Run every 12 hours → "0 */12 * * *"
 cron.schedule("0 */12 * * *", async () => {
   try {
-    const fiveDaysAgo = new Date();
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
     await Request.findOneAndUpdate({
       status: "break",
-      createdAt: { $lt: fiveDaysAgo },
+      createdAt: { $lt: twoDaysAgo },
+      
     }, {status: "break"});
 
     console.log(
@@ -36,14 +37,30 @@ cron.schedule("0 */12 * * *", async () => {
   }
 });
 
+//     const docs = await Request.find({});  // get all documents
 
+//     for (const doc of docs) {
+//       // read sibling fields
+
+//       let oldValue = doc.chatGPT_response[0].visuals_obj;
+// // console.log({oldValue});
+//       if(!oldValue) {
+//         oldValue = doc.chatGPT_response[0]
+//       };
+//       // compute new values
+//       doc.visuals_obj = oldValue;
+
+//       // save changes
+//       await doc.save();
+//     }
 mongoose
   .connect(db, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
-  .then(() => {
+  .then(async() => {
     console.log("MongoDB Connected")
+    
   })
   .catch((err) => console.log(err));
 

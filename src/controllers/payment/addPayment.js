@@ -23,7 +23,8 @@ module.exports = async function (req, res, next) {
         tempPath: "public/views/paymentNotification.html",
         replacements: {
             userEmail: user_body.email,
-            userName: user_body.nick_name,
+            userName: user_body.fullName,
+            
             requestId: request._id,
             receiptImageUrl: proof
         } 

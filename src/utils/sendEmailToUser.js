@@ -21,12 +21,11 @@ module.exports = async function sendEmailToUser(
     
         htmlToSend = template({...replacements, year:new Date().getFullYear()});
     }
-
     // const htmlToSend = template({...replacements, year:new Date().getFullYear()});
     try {
 
         let mailTransporter = nodemailer.createTransport({
-            host: 'smtp.zoho.com',
+            host: "smtp.gmail.com",
             port: 465,
             secure: true,
             auth:{
