@@ -8,8 +8,10 @@ const makeRequestSchema = validator(
     title: Joi.string().required(),
     category: Joi.string().required(),
     mode: Joi.string().required(),
-    description: Joi.string().required(),
-    goal: Joi.string(),
+
+    description: Joi.string().optional(),
+    goal: Joi.string().optional(),
+    
     sample_data: Joi.array().required(),
     file_url: Joi.array().required(),
     categorical_columns: Joi.array().items(Joi.string()).required(),
