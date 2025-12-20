@@ -53,8 +53,9 @@ const generateVisualizationPlan = async (payload) =>{
     const userPrompt = `
     Here is the dataset info:
     Columns: ${JSON.stringify(payload.columns)}
-    Description: ${payload.description}
-    Goal: ${payload.goal}
+    ${payload.description?'Description: '+payload.description:''}
+    Goal: ${payload.goal || 'The necessary goal needed for a '+payload.category+' data.'}
+    Category: ${payload.category}
     Sample rows: ${JSON.stringify(payload.sample_data)}
     Categorical columns: ${JSON.stringify(payload.categorical_columns)}
     Numerical columns: ${JSON.stringify(payload.numerical_columns)}
