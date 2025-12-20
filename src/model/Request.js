@@ -25,11 +25,9 @@ const RequestSchema = new Schema(
     },
     description:{
         type: String,
-        required:true,
     },
     goal:{
         type: String,
-        required:true,
     },
     // index_column: {
     //     type: String
