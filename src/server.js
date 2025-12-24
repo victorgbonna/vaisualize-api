@@ -20,8 +20,8 @@ app.use(express.json({ limit: "1000000mb", extended: true }));
 
 const db = require("./configs/constants").mongoURI;
 
-// Run every 12 hours → "0 */12 * * *"
-cron.schedule("0 */12 * * *", async () => {
+// Run every 4 hours → "0 */4 * * *"
+cron.schedule("0 */4 * * *", async () => {
   try {
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -30,7 +30,7 @@ cron.schedule("0 */12 * * *", async () => {
       status: "break",
       createdAt: { $lt: twoDaysAgo },
       
-    }, {status: "break"});
+    }, {status: "deleted"});
 
     console.log(
       `${new Date().toISOString()}: Deleted expired entries with status 'break'`
@@ -63,7 +63,7 @@ mongoose
   })
   .then(async() => {
     console.log("MongoDB Connected")
-    
+    // await Request.updateMany({},{status:'active'})
   })
   .catch((err) => console.log(err));
 

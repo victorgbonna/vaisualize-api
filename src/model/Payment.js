@@ -14,7 +14,7 @@ const PaymentsSchema = new Schema(
     email_attached:{
         type: String,
         lowercase: true,
-        unique:true,
+        unique:false,
     },
     whatsapp_line:{
         type: String,
