@@ -3,6 +3,8 @@ module.exports = function routes(app) {
     app.use("/admin", require("./admin.js"));
     app.use("/payments", require("./payment.js"));
     app.use("/visuals", require("./visuals.js"));
+    app.use("/conversations", require("./conversations.js"));
+    app.use("/auth", require("./auth.js"));
 
     app.use((req, res, next) => {
         const error = new Error("Not Found");

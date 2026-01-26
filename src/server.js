@@ -12,7 +12,7 @@ const app = express();
 
 
 app.use( cors( {
-  origin:[ "https://www.use-webbi.com",  "https://use-webbi.com",  "https://use-webbi.vercel.app"]
+  // origin:[ "https://www.use-webbi.com",  "https://use-webbi.com",  "https://use-webbi.vercel.app"]
 }) )
 
 app.use(express.urlencoded({ limit: "1000000mb", extended: true }));
