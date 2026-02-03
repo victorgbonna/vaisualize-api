@@ -12,7 +12,7 @@ const addPaymentSchema = validator(
 const approvePaymentSchema = validator(
   Joi.object({
     pay_id: Joi.string().required(),
-    status:Joi.string().optional(),
+    status:Joi.string().allow('', null),
     password: Joi.string()
   })
 );

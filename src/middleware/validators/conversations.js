@@ -11,7 +11,7 @@ const addConvoSchema = validator(
 const addConvoPlotsToVisualsSchema = validator(
   Joi.object({
     chat_id: Joi.string().required(),
-    analysis_id:Joi.string().optional(),
+    analysis_id:Joi.string().allow('', null),
     visuals: Joi.array().items(
         Joi.object({
           plot_type: Joi.string().required(),

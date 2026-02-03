@@ -13,7 +13,7 @@ const registerSchema = validator(
     password: Joi.when("medium", {
       is: "normal",
       then: Joi.string().required(),
-      otherwise: Joi.string().optional(),
+      otherwise: Joi.string().allow('', null),
     }),
     phone: Joi.string(),
     imageUrl:Joi.string(),
@@ -43,7 +43,7 @@ const loginSchema = validator(
     password: Joi.when("medium", {
       is: "normal",
       then: Joi.string().required(),
-      otherwise: Joi.string().optional(),
+      otherwise: Joi.string().allow('', null),
     }),
 }))
 

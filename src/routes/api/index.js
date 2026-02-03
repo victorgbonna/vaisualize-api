@@ -5,6 +5,7 @@ module.exports = function routes(app) {
     app.use("/visuals", require("./visuals.js"));
     app.use("/conversations", require("./conversations.js"));
     app.use("/auth", require("./auth.js"));
+    app.use("/projects", require("./project.js"));
 
     app.use((req, res, next) => {
         const error = new Error("Not Found");
