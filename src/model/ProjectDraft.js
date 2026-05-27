@@ -4,24 +4,24 @@ const Schema = mongoose.Schema;
 const ProjectDraftSchema = new Schema(
   {
     title:{
-        type: String,
-        required:true,
+      type: String,
+      required:true,
     },
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref:'user'
     },
     category:{
-        type: String,
-        default:'general'
+      type: String,
+      default:'general'
     },
     mode:{
-        type: String,
-        default:'Public'
+      type: String,
+      default:'Public'
     },
     
     description:{
-        type: String,
+      type: String,
     },
     
   },

@@ -90,7 +90,7 @@ const RequestSchema = new Schema(
     },
     visuals_obj:{
         type: Object,
-        required:true
+        required:false
     },
     active_filter:{
         type: mongoose.Schema.Types.ObjectId,

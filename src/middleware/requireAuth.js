@@ -5,7 +5,6 @@ const consolelog = require('../utils/consolelog')
 
 const requireAuth = async ( req, res, next ) => {
 
-    //VERIFY AUTHENTICATION
     const { authorization } = req.headers
 
     if(!authorization) {
@@ -13,11 +12,10 @@ const requireAuth = async ( req, res, next ) => {
     }
 
     const token = authorization.split(' ')[1]
-
     try{
         const {_id} = jwt.verify( token, process.env.APP_SECRET_KEY )
        
-        let user = await User.findOne({_id})  
+        let user = await User.findOne({_id}).lean()  
 
         const { error: status_error } = checkUserAccountStatus(user.status);
         if (status_error) {
