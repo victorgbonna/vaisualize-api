@@ -11,9 +11,12 @@ const Request = require("./model/Request");
 const app = express();
 
 
-app.use( cors( {
-  // origin:[ "https://www.use-webbi.com",  "https://use-webbi.com",  "https://use-webbi.vercel.app"]
-}) )
+// app.use( cors( {
+//   // origin:[ "https://www.use-webbi.com",  "https://use-webbi.com",  "https://use-webbi.vercel.app"]
+// }) )
+app.use(cors({
+  origin: '*'
+}));
 
 app.use(express.urlencoded({ limit: "1000000mb", extended: true }));
 app.use(express.json({ limit: "1000000mb", extended: true }));

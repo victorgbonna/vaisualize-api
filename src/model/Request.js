@@ -90,6 +90,7 @@ const RequestSchema = new Schema(
     },
     visuals_obj:{
         type: Object,
+        
         required:false
     },
     active_filter:{
