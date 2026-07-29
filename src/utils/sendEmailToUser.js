@@ -39,7 +39,7 @@ module.exports = async function sendEmailToUser(
         //     }
         // })       
         let details = {
-            from: `Climax Properties Ng <noreply@climaxpropertiesng.com>`,
+            from: `AI Simplified Academy <noreply@engineerntl.online>`,
             // to: mailTo,
             subject,
             html:htmlToSend,

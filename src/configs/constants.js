@@ -174,5 +174,6 @@ module.exports = {
     }
     
   },
+  RESEND_API_KEY:process.env.RESEND_API_KEY
   // 'Bearer sk_test_a1afb90a2216f7ce7d58e51d586ae5792d86ef90'
 };

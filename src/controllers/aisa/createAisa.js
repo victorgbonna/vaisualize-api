@@ -2,18 +2,28 @@ const Aisa = require("../../model/Aisa");
 const sendEmailToUser = require("../../utils/sendEmailToUser");
 
 const ADMIN_EMAIL = "ai.simplified.academy@gmail.com";
-// ${req.protocol}://${req.get("host")}
+
 function getGrantUrl(req, aisaId) {
-  return `https://vaisualize-api.onrender.com/aisa/${aisaId}/grant`;
+  return `${req.protocol}://${req.get("host")}/aisa/${aisaId}/grant`;
 }
 
 module.exports = async function createAisa(req, res, next) {
   try {
+    //find if exists
+    // const existingAisa = await Aisa.findOne({ email: req.body.email, status:'granted' });
+    // if (existingAisa) {
+    //   return res.status(400).json({
+    //     status: "error",
+    //     message: "Aisa entry already exists for this email.",
+    //   });
+    // }
+
     const aisa = await Aisa.create({
       email: req.body.email,
       status: "entered",
     });
 
+    console.log("Aisa entry created:", aisa);
     const emailResult = await sendEmailToUser({
       mailTo: ADMIN_EMAIL,
       subject: "New Aisa file access request",
