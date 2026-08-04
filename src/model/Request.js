@@ -11,10 +11,6 @@ const RequestSchema = new Schema(
         type: String,
         required:true,
     },
-    category:{
-        type: String,
-        default:'general'
-    },
     mode:{
         type: String,
         default:'public'
