@@ -11,6 +11,8 @@ const getAllOwnedCreatedProject = require("../../controllers/project/owned_proje
 const getOwnedCreatedPoject = require("../../controllers/project/owned_projects/getOwnedCreatedPoject");
 const getAllSharedProjects = require("../../controllers/project/shared_projects/getAllSharedProjects");
 const getSharedProjectById = require("../../controllers/project/shared_projects/getSharedProjectById");
+const addVisualizations = require("../../controllers/project/addVisualizations");
+const { addVisualizationsSchema } = require("../../middleware/validators/visualization");
 
 const router = require("express").Router();
 
@@ -26,6 +28,8 @@ router.get("/owned/:id", requireAuth, getOwnedCreatedPoject);
 // Shared projects
 router.get("/shared-all", requireAuth, getAllSharedProjects);
 router.get("/shared/:id", requireAuth, getSharedProjectById);
+
+router.post("/:id/visualizations/add", requireAuth, addVisualizationsSchema, addVisualizations);
 
 // Public projects
 router.get("/public", getAllPublicProjects);

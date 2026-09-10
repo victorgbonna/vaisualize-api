@@ -29,7 +29,7 @@ const ProjectSchema = new Schema(
     visualization_settings: { type: VisualizationSettingsSchema, required: true },
     table_relationships: [{ type: TableRelationshipSchema }],
     active_filter: { type: mongoose.Schema.Types.ObjectId, ref: 'filter' },
-    visualizations: { type: Object, required: false },
+    visualizations: { type: Array, required: false },
     datasets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'dataset', required: true }],
     shared_guest_with: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
     shared_edited_with: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],

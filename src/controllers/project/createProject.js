@@ -21,7 +21,7 @@ module.exports = async function (req, res, next) {
         category: project.category,
         mode: project.mode,
         description: project.description,
-        relationships: body.table_relationships,
+        table_relationships: body.table_relationships,
         defaults:body.defaults,
         datasets: datasets_ids,
         visualization_settings: body.visualization_settings,
@@ -32,7 +32,7 @@ module.exports = async function (req, res, next) {
     await ProjectDraft.deleteOne({_id:req.body.project_draft_id});
     if(project.enable_ai_charts){
       // Trigger AI chart generation logic here (e.g., send message to queue)
-    } 
+    }
     return res
       .status(200)
       .json({ status:  "success", message:"Project created", project_id:new_project._id });

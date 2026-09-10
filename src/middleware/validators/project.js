@@ -20,7 +20,9 @@ const createProjectRequestSchema = validator(
       .items(
         Joi.object({
           proj_title: Joi.string().required(),
+          file_url: Joi.string().required(),
           file_name: Joi.string().required(),
+          first_five_rows: Joi.array().items(Joi.object()).required(),
           file_size: Joi.number().required().positive(),
           total_rows: Joi.number().required().integer().positive(),
           columns: Joi.object({

@@ -21,7 +21,9 @@ const DatasetSchema = new Schema(
     file_name: { type: String, required: true },
     file_size: { type: Number, required: true },
     total_rows: { type: Number, required: true },
+    file_url: { type: String, required: true },
     columns: { type: ColumnsSchema, required: true },
+    first_five_rows: { type: [Schema.Types.Mixed], required: true },
     proj_title: {
       type: String,
         required:true,
