@@ -1,23 +1,46 @@
 const Joi = require("joi");
 
+const axisSchema = Joi.object({
+  table: Joi.string().required(),
+  col: Joi.string().required(),
+}).unknown(true);
+
 const visualizationSchema = Joi.object({
-  title: Joi.string().required(),
-//   lookUpTable: Joi.string().required(),
+  title: Joi.string(),
+
   chartType: Joi.string().required(),
-  x: Joi.object({
-    table: Joi.string().required(),
-    col: Joi.string().required(),
-  }).required(),
-  y: Joi.object({
-    table: Joi.string().required(),
-    col: Joi.string().required(),
-  }).required(),
-  group_by: Joi.object({
-    table: Joi.string().required(),
-    col: Joi.string().required(),
-  }).required(),
-  aggregate: Joi.string().required(),
-  unit: Joi.string().required(),
+
+  x: Joi.alternatives()
+    .try(axisSchema, Joi.array().items(axisSchema))
+    .optional()
+    .allow(null),
+
+  y: Joi.alternatives()
+    .try(axisSchema, Joi.array().items(axisSchema))
+    .optional()
+    .allow(null),
+
+  z: Joi.alternatives()
+    .try(axisSchema, Joi.array().items(axisSchema))
+    .optional()
+    .allow(null),
+
+  group_by: Joi.alternatives()
+    .try(axisSchema, Joi.array().items(axisSchema))
+    .optional()
+    .allow(null),
+
+  aggregate: Joi.string()
+    .optional()
+    .allow(null),
+
+  unit: Joi.string()
+    .optional()
+    .allow(null),
+
+  bins: Joi.number()
+    .optional()
+    .allow(null),
 }).unknown(true);
 
 const addVisualizationsSchema = (req, res, next) => {

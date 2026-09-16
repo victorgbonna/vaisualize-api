@@ -70,11 +70,24 @@ const addFiltersSchema = validator(
     })
 )
 
+const askDataiSchema = validator(
+  Joi.object({
+    input: Joi.string().trim().min(1).required(),
+    project_details: Joi.object({
+      datasets: Joi.array().items(Joi.object()).min(1).required(),
+      table_relationships: Joi.array().items(Joi.object()).optional(),
+    })
+      .required()
+      .unknown(true),
+  })
+);
+
 module.exports = {
     deleteVisualSchema,modifyVisualSchema, 
     addVisualSchema, 
     addFiltersSchema,
-    massUpdateOnVisualSchema
+    massUpdateOnVisualSchema,
+    askDataiSchema
 
 };
   

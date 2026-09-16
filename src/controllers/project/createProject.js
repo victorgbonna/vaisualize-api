@@ -1,6 +1,7 @@
 const Dataset = require("../../model/Dataset");
 const Project = require("../../model/Project");
 const ProjectDraft = require("../../model/ProjectDraft");
+const { generateInsightQuestions } = require("../../services/chatGPTServices");
 
 
 module.exports = async function (req, res, next) {
@@ -33,11 +34,22 @@ module.exports = async function (req, res, next) {
     if(project.enable_ai_charts){
       // Trigger AI chart generation logic here (e.g., send message to queue)
     }
+    generateInsights(new_project);
     return res
       .status(200)
       .json({ status:  "success", message:"Project created", project_id:new_project._id });
   } catch (error) {
     console.log({error})
     next(error);
+  }
+};
+
+const generateInsights = async (project) => {
+  try {
+    const insights = await generateInsightQuestions({ project });
+    await Project.updateOne({_id: project._id}, {$set: {insight_questions_template: insights}});
+  } catch (error) {
+    console.error("Failed to generate insights:", error);
+    return [];
   }
 };

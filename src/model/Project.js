@@ -26,6 +26,7 @@ const ProjectSchema = new Schema(
     category: { type: String, default: 'general' },
     mode: { type: String, default: 'Public' },
     description: { type: String },
+    insight_questions_template: { type: Array, required: false }, 
     visualization_settings: { type: VisualizationSettingsSchema, required: true },
     table_relationships: [{ type: TableRelationshipSchema }],
     active_filter: { type: mongoose.Schema.Types.ObjectId, ref: 'filter' },
