@@ -1,4 +1,4 @@
-const { modifyVisualSchema, addVisualSchema, addFiltersSchema, deleteVisualSchema, massUpdateOnVisualSchema, askDataiSchema } = require("../../middleware/validators/visual");
+const { modifyVisualSchema, addVisualSchema, addFiltersSchema, deleteVisualSchema, massUpdateOnVisualSchema, askDataiSchema, generateFilterPlanSchema } = require("../../middleware/validators/visual");
 const addVisual = require("../../controllers/visuals/addVisual");
 const deleteVisual = require("../../controllers/visuals/deleteVisual");
 const editVisual = require("../../controllers/visuals/editVisual");
@@ -8,6 +8,7 @@ const getAllFilterByReqId = require("../../controllers/visuals/getAllFilterByReq
 const resetFilter = require("../../controllers/visuals/resetFilter");
 const massUpdateOnVisual = require("../../controllers/visuals/massUpdateOnVisual");
 const askDatai = require("../../controllers/visuals/askDatai");
+const generateFilterPlan = require("../../controllers/visuals/generateFilterPlan");
 
 const router = require("express").Router();
 
@@ -20,6 +21,7 @@ router.post("/filter/reset",resetFilter);
 router.get("/filter/get-all/:req_id",getAllFilterByReqId);
 router.put("/mass-update",massUpdateOnVisualSchema,massUpdateOnVisual);
 router.post("/ask-datai", askDataiSchema, askDatai);
+router.post("/filter/generate-plan", generateFilterPlanSchema, generateFilterPlan);
 
 
 module.exports = router;

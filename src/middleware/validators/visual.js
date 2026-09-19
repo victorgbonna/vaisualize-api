@@ -82,12 +82,40 @@ const askDataiSchema = validator(
   })
 );
 
+const filterColumnDefSchema = Joi.object({
+  col: Joi.string().required(),
+  cat: Joi.string().required(),
+  type: Joi.string().required(),
+});
+
+const filterTableDefSchema = Joi.object({
+  name: Joi.string().required(),
+  columns: Joi.array().items(filterColumnDefSchema).min(1).required(),
+});
+
+const filterRelationshipDefSchema = Joi.object({
+  from_table: Joi.string().required(),
+  from_column: Joi.string().required(),
+  to_table: Joi.string().required(),
+  to_column: Joi.string().required(),
+});
+
+const generateFilterPlanSchema = validator(
+  Joi.object({
+    activeTable: filterTableDefSchema.required(),
+    relatedTables: Joi.array().items(filterTableDefSchema).optional(),
+    relationships: Joi.array().items(filterRelationshipDefSchema).optional(),
+    prompt: Joi.string().trim().min(1).required(),
+  })
+);
+
 module.exports = {
     deleteVisualSchema,modifyVisualSchema, 
     addVisualSchema, 
     addFiltersSchema,
     massUpdateOnVisualSchema,
-    askDataiSchema
+    askDataiSchema,
+    generateFilterPlanSchema
 
 };
   
