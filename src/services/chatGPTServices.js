@@ -276,7 +276,45 @@ const generateVisualizationPlan = async (payload) => {
   }
 };
 
-const generateDataIChartConfiguration = async (payload) => {
+function formatProjectDetailsForPrompt(project_details = {}) {
+  const { title, relationships = [], datasets = [] } = project_details || {};
+
+  const relationshipsText = relationships.length
+    ? relationships
+        .map((rel, index) => `${index + 1}. ${rel.from_table}.${rel.from_column} -> ${rel.to_table}.${rel.to_column}`)
+        .join("\n")
+    : "None";
+
+  const datasetsText = datasets.length
+    ? datasets
+        .map((dataset, index) => {
+          const columns = dataset.columns || {};
+          return `
+Dataset ${index + 1}:
+- file_name: ${dataset.file_name}
+- file_url: ${dataset.file_url}
+- file_size: ${dataset.file_size}
+- total_rows: ${dataset.total_rows}
+- all_columns: ${JSON.stringify(columns.all_columns || [])}
+- active_columns: ${JSON.stringify(columns.active_columns || [])}
+- column_data_types: ${JSON.stringify(columns.column_data_types || [])}`.trim();
+        })
+        .join("\n\n")
+    : "None";
+
+  return `
+Project title: ${title || "Untitled"}
+
+Relationships:
+${relationshipsText}
+
+Datasets:
+${datasetsText}
+`.trim();
+}
+
+const generateChartConfiguration = async (payload) => {
+  // const { input, project_details } = payload;
   const systemPrompt = `
 You are a chart configuration assistant. Return exactly one valid JSON object and nothing else.
 ${hackerCheckPromptInstruction}
@@ -503,7 +541,7 @@ ${JSON.stringify(payload.project_details || {})}
         { role: "user", content: userPrompt },
       ],
     });
-
+    console.log({ response });
     return response?.output_text
       ? JSON.parse(response.output_text)
       : { error: { message: "A valid chart configuration could not be generated from the available project data." } };
@@ -622,13 +660,10 @@ The questions array MUST contain exactly 8 strings.
   }
 };
 
-const generateDataIChatResponse = async ({
-    project,
-    datasets,
-    relationships,
-    prompt,
-    conversation = [],
+const generateDataiChartResponse = async ({
+  input, project_details, existingConversations = [],
 }) => {
+  console.log({ input, project_details, existingConversations });
     const systemPrompt = `
     ${hackerCheckPromptInstruction}
 You are Datai, the conversational data analysis assistant for WebBI.
@@ -650,26 +685,88 @@ Your responsibility is to:
 3. Select the correct table and columns.
 4. Use only the provided relationships when cross-table analysis is required.
 5. Generate a structured formula that the frontend can execute.
-6. Generate a natural-language response template containing placeholders for the values produced by the formula.
+6. Generate a natural-language HTML response that serves as a brief introduction to the computation performed by the formula.
 7. Identify any additional questions in the user's message that should be answered separately.
 
 PROJECT DETAILS:
 
-${JSON.stringify(project)}
+${formatProjectDetailsForPrompt(project_details)}
 
-DATASETS:
-
-${JSON.stringify(datasets)}
-
-RELATIONSHIPS:
-
-${JSON.stringify(relationships)}
-
-${conversation?.length ? `RECENT CONVERSATION:\n\n${JSON.stringify(conversation)}` : ""}
+${existingConversations?.length ? `RECENT CONVERSATION:\n\n${JSON.stringify(existingConversations)}` : ""}
 
 CURRENT USER QUESTION:
 
-${prompt}
+${input}
+
+
+============================================================
+FLEXIBLE QUESTIONS AND WHEN A FORMULA IS REQUIRED
+============================================================
+
+The user may ask questions that do not require a computation.
+
+A formula is NOT always required.
+
+Before generating a formula, determine whether the user's question can be answered directly from the available project, dataset, table, column, relationship, and metadata information.
+
+Examples of questions that may not require a formula:
+
+- "How many tables are in this project?"
+- "What columns are in the users table?"
+- "What type of data is createdAt?"
+- "Which tables are related?"
+- "Tell me about this dataset."
+- "What does the users table contain?"
+
+For these questions, answer directly using the available context without generating a formula unnecessarily. Return these using "status": "informational" (see INFORMATIONAL RESPONSES below).
+
+For questions that require an actual calculation from dataset records, generate the appropriate formula.
+
+Examples:
+
+- "What is the average monthly user registration?"
+- "How many users registered this year?"
+- "What is the total revenue?"
+- "Who are the top 5 users by transactions?"
+
+For these, "operation" must be "basic".
+
+For exploratory questions where the user does not specify exactly what they want to know, such as:
+
+- "Give me some insights about my users."
+- "Analyze this data."
+- "What can you tell me about this dataset?"
+- "Find anything interesting."
+
+the AI should determine useful and meaningful insights from the available data.
+
+If those insights require calculations, generate the appropriate formula(s).
+
+If useful information can be provided directly from the available metadata without computation, provide that information without generating a formula (use "status": "informational").
+
+Never generate a formula simply because the user asks about the data. Generate one only when an actual dataset computation is required.
+
+
+============================================================
+INFORMATIONAL RESPONSES (NO FORMULA REQUIRED)
+============================================================
+
+When a question can be answered directly from the available project, dataset, table, column, relationship, or metadata information without performing a dataset computation, return:
+
+{
+  "status": "informational",
+  "formula": [],
+  "response": {
+    "template": "",
+    "conclusion": "",
+    "result": []
+  },
+  "pending_questions": []
+}
+
+Unlike computed responses, the "template" for an informational response may include actual known values (table names, column names, data types, relationship details, counts, etc.), since this information is already available to you and does not require a dataset computation.
+
+Do not use "status": "informational" when the question requires an actual calculation from dataset records.
 
 
 ============================================================
@@ -681,6 +778,7 @@ You may use only these operations:
 1. aggregate
 2. group_aggregate
 3. filter
+4. basic
 
 
 ============================================================
@@ -690,14 +788,15 @@ FORMULA STRUCTURE
 The formula must use exactly this structure:
 
 {
-  "operation": "aggregate | group_aggregate | filter",
+  "operation": "aggregate | group_aggregate | filter | basic",
   "main_table": "table name",
   "relationships": [],
   "filters": [],
   "group_by": [],
   "calculations": [],
+  "post_aggregate": null,
   "sort": [],
-  "limit": 10
+  "limit": null
 }
 
 The properties below are collections unless otherwise specified.
@@ -773,54 +872,98 @@ If no grouping is required:
 "group_by": []
 
 
+TIME-BASED GROUPING:
+
+When the user asks for a time-based grouping, add a "unit" property to the group_by item specifying the time granularity.
+
+Supported units:
+
+- day
+- week
+- month
+- quarter
+- year
+
+Example:
+
+{
+  "table": "26_fanchallenger_db.users.json",
+  "field": "createdAt",
+  "unit": "month"
+}
+
+Therefore:
+
+"How many users signed up each month?"
+
+must group createdAt by month rather than grouping by the raw timestamp.
+
+Only include "unit" when the grouping is time-based. Do not add it to non-date group_by fields.
+
+
 IMPORTANT RELATED-TABLE GROUPING:
 
-If group_by references a field from a related table, use the provided relationship to resolve the related value.
+When a group_by field represents a relationship, it must use the foreign key from the from_table, not the referenced primary key from the to_table.
 
-For example:
+For example, if the relationship is:
 
-transactions:
+{
+  "from_table": "transactions",
+  "from_column": "user",
+  "to_table": "users",
+  "to_column": "_id"
+}
 
-user
-amount
+then the group_by must use:
 
-users:
+{
+  "table": "transactions",
+  "field": "user"
+}
 
-_id
-favourite_team
+Do NOT use users._id as the group_by.field.
 
-relationship:
+Do not add the same foreign key to group_by more than once.
 
-transactions.user -> users._id
 
-For:
+SHOWCASE_KEY:
 
-"What is the transaction value by favourite team?"
+When a group_by field is a foreign key representing a relationship, add a "showcase_key" property to that specific group_by item.
 
-use:
+"showcase_key" must always be an array. It should contain the human-readable columns from the related table that should be used to display the grouped entity instead of its ID.
 
-"main_table": "transactions.csv"
+Examples:
 
-and:
+{
+  "table": "transactions",
+  "field": "user",
+  "showcase_key": ["firstName"]
+}
 
-"group_by": [
-  {
-    "table": "users.json",
-    "field": "favourite_team"
-  }
-]
+or:
 
-The frontend executor will:
+{
+  "table": "transactions",
+  "field": "user",
+  "showcase_key": ["firstName", "lastName"]
+}
 
-1. Start from transaction rows.
-2. Use transactions.user.
-3. Resolve users._id.
-4. Retrieve users.favourite_team.
-5. Group transaction rows by the resolved favourite_team.
-6. Merge users having the same favourite_team.
-7. Perform the requested calculation across the merged group.
+or:
 
-Do NOT create a separate operation for this.
+{
+  "table": "transactions",
+  "field": "user",
+  "showcase_key": ["firstName", "age"]
+}
+
+Never use an ID or identifier column for showcase_key when a suitable human-readable column is available.
+
+If the group_by field is not a foreign key representing a relationship, do not add showcase_key.
+
+"showcase_key" belongs inside the relevant group_by item. It must not be added as a top-level formula property.
+"showcase_key" must be a column in the foreign table related to the field being grouped by.
+
+Do not change any other existing group_by behavior.
 
 
 ============================================================
@@ -861,6 +1004,29 @@ If an alias is useful for clearly identifying multiple calculations, you may inc
 Aliases are optional.
 
 Do not create unnecessary aliases.
+
+
+ENDTAG:
+
+A calculation may also include an optional "endTag" property. "endTag" represents text that should be displayed after the calculated value on the frontend.
+
+Example:
+
+{
+  "field": "_id",
+  "function": "count",
+  "alias": "monthly_signups",
+  "endTag": "signups"
+}
+
+This allows the frontend to display: 120 signups
+
+Other examples:
+
+"endTag": "%"
+"endTag": "cm"
+
+"endTag" is optional and does not replace or remove "alias".
 
 
 ============================================================
@@ -945,21 +1111,51 @@ Example:
 LIMIT
 ============================================================
 
-"limit" is a single number.
+"limit" is either a single number or null.
 
-Use it when the user asks for a specific number of results.
+If the user explicitly specifies a number, use that number.
 
 Examples:
 
-"top 5 users" → 5
+"top 5 users" → limit 5
 
-"top 10 products" → 10
+"top 10 months" → limit 10
 
-"highest revenue" → 1
+"top 20 products" → limit 20
 
-If no specific limit is required, use:
+If the user asks for a ranked result but does not specify a number, default to 5.
 
-10
+Examples:
+
+"top users" → limit 5
+
+"highest transactions" → limit 5
+
+"top months" → limit 5
+
+"months with the highest" → limit 5
+
+However, if the request does not indicate any ranking, do not apply the default limit of 5.
+
+Examples:
+
+"users by month" → no limit
+
+"revenue by year" → no limit
+
+Also, when a post-aggregation calculation requires all grouped periods, do not apply the default limit.
+
+Example:
+
+"average monthly user signups" → no limit
+
+Use "limit": null when no limit should be applied.
+
+If the user explicitly asks for a limited time-based result, use the requested limit.
+
+Example:
+
+"top 10 months by signups" → limit 10
 
 
 ============================================================
@@ -998,30 +1194,71 @@ Example:
 
 
 ============================================================
+POST_AGGREGATE
+============================================================
+
+"post_aggregate" defaults to null.
+
+Use "post_aggregate" when the user wants a calculation performed across results that have already been grouped/calculated.
+
+Supported functions:
+
+- sum
+- average
+- avg
+- min
+- max
+
+Example:
+
+User:
+"What is the average monthly user signups?"
+
+First calculate the number of signups for each month:
+
+{
+  "field": "_id",
+  "function": "count",
+  "alias": "monthly_signups",
+  "endTag": "signups"
+}
+
+Then perform the average across those monthly results:
+
+"post_aggregate": {
+  "function": "average",
+  "field": "monthly_signups",
+  "alias": "average_monthly_signups",
+  "endTag": "signups"
+}
+
+The calculation should effectively be: sum of all monthly signup counts / number of months.
+
+Do NOT calculate the average directly from the individual user records.
+
+The same logic applies to:
+
+"total monthly revenue" - first calculate revenue for each month, then sum the monthly results.
+
+"highest monthly revenue" - first calculate revenue for each month, then find the maximum monthly result.
+
+"average monthly revenue" - first calculate revenue for each month, then average the monthly results.
+
+The "field" inside "post_aggregate" should reference the "alias" of the calculation being aggregated.
+
+
+============================================================
 NATURAL-LANGUAGE RESPONSE
 ============================================================
 
-The response must contain a natural-language template.
+The response must contain a short natural-language HTML "template" that introduces the computation performed by the formula.
 
-The template MUST NOT contain actual calculated values.
-
-Instead, use placeholders corresponding to fields in the result.
+You do not have access to the actual calculated values, so do not state specific numbers, dates, names, or other result values in the template.
 
 Example:
 
 "template":
-"The quarter with the highest revenue was {quarter}, with total revenue of {sum_amount}."
-
-
-The frontend will replace:
-
-{quarter}
-
-and:
-
-{sum_amount}
-
-with the actual values after executing the formula.
+"<p>Here is the revenue breakdown by quarter, ranked from highest to lowest.</p>"
 
 
 ============================================================
@@ -1030,18 +1267,16 @@ RESULT
 
 "result" MUST always be an array.
 
-The result array describes the values expected from the formula.
+The result array describes the field structure expected from the formula, not actual values.
 
-Do NOT put actual calculated values into it.
-
-Use placeholders.
+Each object should use the expected field names as keys, with empty strings as values, since the actual values are not known to you.
 
 Example:
 
 "result": [
   {
-    "quarter": "{quarter}",
-    "sum_amount": "{sum_amount}"
+    "quarter": "",
+    "sum_amount": ""
   }
 ]
 
@@ -1049,8 +1284,8 @@ For multiple grouped results:
 
 "result": [
   {
-    "team": "{team}",
-    "sum_amount": "{sum_amount}"
+    "team": "",
+    "sum_amount": ""
   }
 ]
 
@@ -1059,6 +1294,22 @@ The number of objects in the result does not represent actual rows available to 
 It represents the expected result structure.
 
 The frontend executor will produce the actual result rows.
+
+
+============================================================
+CONCLUSION
+============================================================
+
+The response must also include a "conclusion" field: a short natural-language HTML statement that provides a closing statement after the computed result.
+
+Like "template", you do not have access to the actual calculated values, so do not state specific numbers, dates, names, or other result values in the conclusion.
+
+Example:
+
+"conclusion":
+"<p>This breakdown highlights how revenue is distributed across quarters.</p>"
+
+The "conclusion" complements "template" without repeating it verbatim.
 
 
 ============================================================
@@ -1099,7 +1350,7 @@ This is one analytical request and may use multiple result fields.
 CONVERSATION CONTEXT
 ============================================================
 
-${conversation?.length ? `Use the recent conversation  to understand better context` : "This is the first conversation so far"}
+${existingConversations?.length ? `Use the recent conversation  to understand better context` : "This is the first conversation so far"}
 
 Do not invent missing context.
 
@@ -1140,23 +1391,7 @@ STRICT DATA RULES
 
 15. Return valid JSON only.
 
-
-============================================================
-CLARIFICATION
-============================================================
-
-If the question is ambiguous or cannot be answered using the available schema, return:
-
-{
-  "status": "clarification_required",
-  "formula": {},
-  "response": {
-    "template": "",
-    "result": []
-  },
-  "pending_questions": [],
-  "clarification": "Your clarification question here."
-}
+16. Never provide a clarification request, go direct in whats best for the query and provide the most accurate response possible.
 
 If the request is unrelated to data analysis or cannot be supported by the available project data, return:
 
@@ -1165,6 +1400,7 @@ If the request is unrelated to data analysis or cannot be supported by the avail
   "formula": {},
   "response": {
     "template": "",
+    "conclusion": "",
     "result": []
   },
   "pending_questions": []
@@ -1186,11 +1422,13 @@ For a successful request, return exactly:
     "filters": [],
     "group_by": [],
     "calculations": [],
+    "post_aggregate": null,
     "sort": [],
-    "limit": 10
+    "limit": null
   },
   "response": {
     "template": "",
+    "conclusion": "",
     "result": []
   },
   "pending_questions": []
@@ -1213,7 +1451,7 @@ Do not include any text before or after the JSON.
             },
         ],
     });
-
+    console.log({ response });
     const output =
         response?.output_text ||
         JSON.stringify({
@@ -1221,6 +1459,7 @@ Do not include any text before or after the JSON.
             formula: {},
             response: {
                 template: "",
+                conclusion: "",
                 result: [],
             },
             pending_questions: [],
@@ -1241,6 +1480,7 @@ Do not include any text before or after the JSON.
             formula: {},
             response: {
                 template: "",
+                conclusion: "",
                 result: [],
             },
             pending_questions: [],
@@ -1249,4 +1489,4 @@ Do not include any text before or after the JSON.
 };
 
 
-module.exports = { generateFilterPlan, generateVisualizationPlan, generateDataIChartConfiguration, generateDataIChatResponse, generateInsightQuestions };
+module.exports = { generateFilterPlan, generateVisualizationPlan, generateChartConfiguration, generateDataiChartResponse, generateInsightQuestions };

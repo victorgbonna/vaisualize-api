@@ -73,9 +73,12 @@ const addFiltersSchema = validator(
 const askDataiSchema = validator(
   Joi.object({
     input: Joi.string().trim().min(1).required(),
-    project_details: Joi.object({
-      datasets: Joi.array().items(Joi.object()).min(1).required(),
-      table_relationships: Joi.array().items(Joi.object()).optional(),
+    existingConversations: Joi.array().items().optional(),
+    project: Joi.object({
+      title: Joi.string(),
+      _id:Joi.string(),
+      relationships: Joi.array().items(Joi.object()).optional(),
+      datasets: Joi.array().items(Joi.object()).optional(),
     })
       .required()
       .unknown(true),

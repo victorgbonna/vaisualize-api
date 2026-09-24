@@ -38,6 +38,13 @@ const updateConvoContentSchema = validator(
   })
 );
 
+const updateConversationContentSchema = validator(
+  Joi.object({
+    _id: Joi.string().required(),
+    content: Joi.string().trim().min(1).required(),
+  })
+);
+
 const createConversationSchema = validator(
     Joi.object({
       datasets: Joi.array()
@@ -83,5 +90,5 @@ const createConversationSchema = validator(
       title: Joi.string().required()
     })
   );
-module.exports = { addConvoSchema, addConvoPlotsToVisualsSchema, createConversationSchema, projectChatRequestSchema, updateConvoContentSchema };
+module.exports = { addConvoSchema, addConvoPlotsToVisualsSchema, createConversationSchema, projectChatRequestSchema, updateConvoContentSchema, updateConversationContentSchema };
   

@@ -20,7 +20,6 @@ router.post("/filter/edit", addFiltersSchema, editFilter);
 router.post("/filter/reset",resetFilter);
 router.get("/filter/get-all/:req_id",getAllFilterByReqId);
 router.put("/mass-update",massUpdateOnVisualSchema,massUpdateOnVisual);
-router.post("/ask-datai", askDataiSchema, askDatai);
 router.post("/filter/generate-plan", generateFilterPlanSchema, generateFilterPlan);
 
 

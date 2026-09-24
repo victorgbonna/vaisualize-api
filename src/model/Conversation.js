@@ -57,6 +57,15 @@ const GroupBySchema = new Schema(
       type: String,
       required: true,
     },
+    unit: {
+      type: String,
+      // enum: ["day", "week", "month", "quarter", "year"],
+      required: false,
+    },
+    showcase_key: {
+      type: [String],
+      required: false,
+    },
   },
   { _id: false }
 );
@@ -74,6 +83,9 @@ const CalculationSchema = new Schema(
     alias: {
       type: String,
     },
+    endTag:{
+      type: String,
+    }
   },
   { _id: false }
 );
@@ -97,7 +109,7 @@ const FormulaSchema = new Schema(
   {
     operation: {
       type: String,
-      enum: ["aggregate", "group_aggregate", "filter"],
+      enum: ["aggregate", "group_aggregate", "filter", 'basic'],
       required: true,
     },
 
@@ -130,11 +142,15 @@ const FormulaSchema = new Schema(
       type: [SortSchema],
       default: [],
     },
-
+    post_aggregate: {
+      type: CalculationSchema,
+      default: null,
+    },
     limit: {
       type: Number,
       default: 10,
     },
+    
   },
   { _id: false }
 );
@@ -156,11 +172,14 @@ const ResponseSchema = new Schema(
       type: String,
       default: "",
     },
-
-    result: {
-      type: [ResultSchema],
-      default: [],
+    conclusion:{
+      type: String,
+      default: "",
     },
+    // result: {
+    //   type: [ResultSchema],
+    //   default: [],
+    // },
   },
   { _id: false }
 );
@@ -222,6 +241,11 @@ const ConversationSchema = new Schema(
       type: String,
       default: "",
     },
+    stage:{
+      type: String,
+      enum: ["formula", "solved"],
+      default: "formula"
+    }
   },
   {
     timestamps: true,
