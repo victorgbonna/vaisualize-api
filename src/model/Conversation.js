@@ -82,9 +82,6 @@ const CalculationSchema = new Schema(
     },
     alias: {
       type: String,
-    },
-    endTag:{
-      type: String,
     }
   },
   { _id: false }

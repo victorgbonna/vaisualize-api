@@ -10,12 +10,12 @@ const errorResponse = {
 module.exports = async function (req, res, next) {
   try {
     const { input, project, existingConversations} = req.body || {};
-    const conversa=await Conversation.findOne({
-      user_id: req.user._id,
-      project_id: project._id,
-    }).sort({ createdAt: -1 }).skip(+input).lean();
+    // const conversa=await Conversation.findOne({
+    //   user_id: req.user._id,
+    //   project_id: project._id,
+    // }).sort({ createdAt: -1 }).skip(+input).lean();
     
-    return res.status(200).json({ conversation: conversa });
+    // return res.status(200).json({ conversation: conversa });
     await Conversation.create({
       user_id: req.user._id,
       project_id: project._id,

@@ -931,7 +931,6 @@ SHOWCASE_KEY:
 When a group_by field is a foreign key representing a relationship, add a "showcase_key" property to that specific group_by item.
 
 "showcase_key" must always be an array. It should contain the human-readable columns from the related table that should be used to display the grouped entity instead of its ID.
-
 Examples:
 
 {
@@ -955,6 +954,7 @@ or:
   "field": "user",
   "showcase_key": ["firstName", "age"]
 }
+N/B showcase_key must be a column from the 'columns' data provided, be case sensitive too.
 
 Never use an ID or identifier column for showcase_key when a suitable human-readable column is available.
 
@@ -972,62 +972,50 @@ CALCULATIONS
 
 "calculations" contains the metrics that need to be calculated.
 
-Each calculation must use:
+Each calculation MUST use:
 
 {
   "field": "column name",
-  "function": "sum | count | count_distinct | average | avg | min | max"
+  "function": "sum | count | count_distinct | average | avg | min | max",
+  "alias": "unique calculation name"
 }
 
 The field MUST exist in the relevant table.
+
+The alias is REQUIRED.
+
+Every calculation MUST have an alias.
+
+The alias must clearly describe the calculated value.
+
+The alias must be unique within the formula.
 
 Examples:
 
 {
   "field": "amount",
-  "function": "sum"
+  "function": "sum",
+  "alias": "total_amount"
 }
 
 {
   "field": "user",
-  "function": "count_distinct"
+  "function": "count_distinct",
+  "alias": "unique_users"
 }
 
-If an alias is useful for clearly identifying multiple calculations, you may include:
+The alias will be used by other parts of the formula, including:
 
-{
-  "field": "amount",
-  "function": "sum",
-  "alias": "total_revenue"
-}
+- sort
+- post_aggregate
+- response templates
+- row templates
 
-Aliases are optional.
+Never omit the alias.
 
-Do not create unnecessary aliases.
+Never generate an alias automatically from the function and field.
 
-
-ENDTAG:
-
-A calculation may also include an optional "endTag" property. "endTag" represents text that should be displayed after the calculated value on the frontend.
-
-Example:
-
-{
-  "field": "_id",
-  "function": "count",
-  "alias": "monthly_signups",
-  "endTag": "signups"
-}
-
-This allows the frontend to display: 120 signups
-
-Other examples:
-
-"endTag": "%"
-"endTag": "cm"
-
-"endTag" is optional and does not replace or remove "alias".
-
+Do not use unnecessary or ambiguous aliases.
 
 ============================================================
 FILTERS
@@ -1199,7 +1187,9 @@ POST_AGGREGATE
 
 "post_aggregate" defaults to null.
 
-Use "post_aggregate" when the user wants a calculation performed across results that have already been grouped/calculated.
+Use "post_aggregate" when the user wants a calculation performed on values that have already been calculated by the calculations stage.
+
+A post_aggregate MUST have an alias.
 
 Supported functions:
 
@@ -1209,203 +1199,130 @@ Supported functions:
 - min
 - max
 
-Example:
-
-User:
-"What is the average monthly user signups?"
-
-First calculate the number of signups for each month:
+A function-based post_aggregate must use:
 
 {
-  "field": "_id",
-  "function": "count",
-  "alias": "monthly_signups",
-  "endTag": "signups"
+  "function": "average",
+  "field": "calculation_alias",
+  "alias": "unique_post_aggregate_name"
 }
 
-Then perform the average across those monthly results:
+The "field" MUST reference the alias of an existing calculation.
+
+Example:
+
+"calculations": [
+  {
+    "field": "_id",
+    "function": "count",
+    "alias": "monthly_signups"
+  }
+],
 
 "post_aggregate": {
   "function": "average",
   "field": "monthly_signups",
-  "alias": "average_monthly_signups",
-  "endTag": "signups"
+  "alias": "average_monthly_signups"
 }
 
-The calculation should effectively be: sum of all monthly signup counts / number of months.
+Do not reference the original dataset field in post_aggregate when the value should come from a calculation.
 
-Do NOT calculate the average directly from the individual user records.
+The post_aggregate alias must be unique within the formula.
 
-The same logic applies to:
+The alias will be used by sorting and response templates.
 
-"total monthly revenue" - first calculate revenue for each month, then sum the monthly results.
+If a post_aggregate is not required:
 
-"highest monthly revenue" - first calculate revenue for each month, then find the maximum monthly result.
-
-"average monthly revenue" - first calculate revenue for each month, then average the monthly results.
-
-The "field" inside "post_aggregate" should reference the "alias" of the calculation being aggregated.
-
+"post_aggregate": null
 
 ============================================================
 NATURAL-LANGUAGE RESPONSE
 ============================================================
 
-The response must contain a short natural-language HTML "template" that introduces the computation performed by the formula.
+The response must contain natural-language HTML.
 
-You do not have access to the actual calculated values, so do not state specific numbers, dates, names, or other result values in the template.
+There are two response formats:
 
-Example:
-
-"template":
-"<p>Here is the revenue breakdown by quarter, ranked from highest to lowest.</p>"
+1. SINGLE RESULT
+2. MULTIPLE RESULTS
 
 
-============================================================
-RESULT
-============================================================
+SINGLE RESULT:
 
-"result" MUST always be an array.
+If "limit" is 1, or the query clearly produces a single result, use only "template".
 
-The result array describes the field structure expected from the formula, not actual values.
+Do NOT use "row_template".
 
-Each object should use the expected field names as keys, with empty strings as values, since the actual values are not known to you.
+The template MUST contain placeholders for calculated values.
 
 Example:
 
-"result": [
-  {
-    "quarter": "",
-    "sum_amount": ""
-  }
-]
+"template": "<p>The user with the highest total transaction amount is {{total_amount}}.</p>",
+"row_template": "",
+"conclusion": ""
 
-For multiple grouped results:
+Only calculation aliases and post_aggregate aliases may be used as placeholders.
 
-"result": [
-  {
-    "team": "",
-    "sum_amount": ""
-  }
-]
+For example:
 
-The number of objects in the result does not represent actual rows available to you.
+{{total_amount}}
 
-It represents the expected result structure.
+Do NOT use group_by field names, table names, column names, function names, or any other values as placeholders.
 
-The frontend executor will produce the actual result rows.
+The placeholder must exactly match an existing calculation alias or post_aggregate alias.
 
 
-============================================================
-CONCLUSION
-============================================================
+MULTIPLE RESULTS:
 
-The response must also include a "conclusion" field: a short natural-language HTML statement that provides a closing statement after the computed result.
+If the query can return more than one result, use "template" as the introduction and "row_template" to define how each result row should be displayed.
 
-Like "template", you do not have access to the actual calculated values, so do not state specific numbers, dates, names, or other result values in the conclusion.
+The template itself must NOT contain placeholders.
 
 Example:
 
-"conclusion":
-"<p>This breakdown highlights how revenue is distributed across quarters.</p>"
+"template": "<p>Here are the top competitions by total entry fee:</p>",
 
-The "conclusion" complements "template" without repeating it verbatim.
+"row_template": "<p><strong>{{total_entry_fee}}</strong> in entry fees from {{total_managers}} managers.</p>",
 
+"conclusion": ""
 
-============================================================
-MULTIPLE QUESTIONS
-============================================================
+The frontend will repeat the row_template for each result row.
 
-If the user asks multiple independent questions in one message, answer ONLY the FIRST question.
+Only calculation aliases and post_aggregate aliases may be used as placeholders.
 
-Put the remaining questions in "pending_questions".
-
-Example user message:
-
-"Which quarter had the highest revenue?
-How many users registered in that quarter?
-What was the average transaction amount?"
-
-Answer the first question.
-
-Return:
-
-"pending_questions": [
-  "How many users registered in that quarter?",
-  "What was the average transaction amount?"
-]
-
-Do not combine independent questions into one formula.
-
-However, if the user asks one question requiring multiple fields, treat it as ONE analytical question.
-
-Example:
-
-"Which competition had the most managers, what was its entry fee, and who created it?"
-
-This is one analytical request and may use multiple result fields.
+Do NOT use group_by fields, raw column names, table names, or any other values as placeholders.
 
 
-============================================================
-CONVERSATION CONTEXT
-============================================================
+PLACEHOLDER RULE:
 
-${existingConversations?.length ? `Use the recent conversation  to understand better context` : "This is the first conversation so far"}
+The ONLY values allowed inside {{ }} are calculation aliases or post_aggregate aliases.
 
-Do not invent missing context.
+Valid samples:
 
-If the question cannot be answered reliably from the available project details and conversation context, request clarification.
+{{total_amount}}
+
+{{total_managers}}
+
+{{average_monthly_signups}}
+
+{{gross_value}}
 
 
-============================================================
-STRICT DATA RULES
-============================================================
+TEMPLATE RULES:
 
-1. Never invent a table.
+Do not include actual calculated values in the template or row_template.
 
-2. Never invent a column.
+Do not invent placeholder names.
 
-3. Never invent a relationship.
+Every placeholder MUST exactly match an existing calculation alias or post_aggregate alias.
 
-4. Never invent a value.
+If the response is a single result, row_template MUST be an empty string.
 
-5. Never calculate actual dataset results.
+If the response contains multiple results, template should introduce the results and row_template should describe each result row.
 
-6. Never assume relationships that are not explicitly provided.
+Do not repeat the same information unnecessarily between template, row_template, and conclusion.
 
-7. Never use a column that does not exist.
-
-8. Never use a calculation function outside the supported functions.
-
-9. Never use an operation outside the supported operations.
-
-10. Do not send dataset rows in the response.
-
-11. Do not return Markdown.
-
-12. Do not explain the formula.
-
-13. Do not include reasoning.
-
-14. Do not include commentary.
-
-15. Return valid JSON only.
-
-16. Never provide a clarification request, go direct in whats best for the query and provide the most accurate response possible.
-
-If the request is unrelated to data analysis or cannot be supported by the available project data, return:
-
-{
-  "status": "unsupported",
-  "formula": {},
-  "response": {
-    "template": "",
-    "conclusion": "",
-    "result": []
-  },
-  "pending_questions": []
-}
-
+The conclusion is optional and should only be included when it adds useful context.
 
 ============================================================
 SUCCESS RESPONSE
@@ -1428,12 +1345,11 @@ For a successful request, return exactly:
   },
   "response": {
     "template": "",
-    "conclusion": "",
-    "result": []
+    "row_template": "",
+    "conclusion": ""
   },
   "pending_questions": []
 }
-
 
 The response must be valid JSON.
 
