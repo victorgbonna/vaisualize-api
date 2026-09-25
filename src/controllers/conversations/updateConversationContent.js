@@ -4,10 +4,10 @@ module.exports = async function (req, res, next) {
   try {
     const { _id, content } = req.body;
 
-    await Conversation.updateOne(
-      { _id },
-      { content }
-    );
+    // await Conversation.updateOne(
+    //   { _id },
+    //   { content }
+    // );
 
     return res
       .status(200)

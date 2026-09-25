@@ -81,7 +81,19 @@ NATURAL LANGUAGE INTERPRETATION
 Interpret natural language carefully, but never change the user's requested meaning.
 
 COLUMN MATCHING
-The user may refer to a column using natural language instead of its exact column name (e.g. "creation date" for "createdAt"). Match these only when the supplied schema makes the match reasonably clear. If multiple columns could match, do NOT guess; return a clarification_required status instead.
+The user may refer to a column using natural language instead of its exact column name (e.g. "creation date" for "createdAt"). Match these only when the supplied schema makes the match reasonably clear. If multiple columns could match, you may return a clarification_required status instead. 
+Sample of the response:
+{
+  "status": "clarification_required",
+  "formula": [],
+  "content": "<your clarification response here in html format>",
+  "response": {
+    "template": "",
+    "conclusion": "",
+    "result": []
+  },
+  "pending_questions": []
+}
 
 RELATIONSHIP-BASED FILTERING
 The active table is the table whose rows will ultimately be displayed. A filter may reference a column belonging to a directly related table when the user's request requires it, using the supplied relationships. The frontend executor will use the supplied relationship to resolve the related-table filter against the active table.
@@ -132,12 +144,12 @@ For a successful filter translation, return ONLY:
 For clarification, return ONLY:
 {
   "status": "clarification_required",
-  "message": "Which column do you want to filter?"
+  "content": "<return clarification response here in html format>"
 }
 For unsupported requests, return ONLY:
 {
   "status": "unsupported",
-  "message": "That type of filter is not currently supported."
+  "content": "<p>That type of filter is not currently supported.</p>"
 }
 
 Never return markdown. Never return JavaScript. Never return explanations outside the JSON response. Never invent columns, tables, relationships, operators, or values. Always return valid JSON, and nothing but the JSON object described above.
@@ -145,7 +157,7 @@ Never return markdown. Never return JavaScript. Never return explanations outsid
 
   const fallback = {
     status: "unsupported",
-    message: "That type of filter is not currently supported.",
+    content: "<p>That type of filter is not currently supported.</p>",
   };
 
   try {
@@ -718,6 +730,8 @@ Examples of questions that may not require a formula:
 - "Tell me about this dataset."
 - "What does the users table contain?"
 
+
+
 For these questions, answer directly using the available context without generating a formula unnecessarily. Return these using "status": "informational" (see INFORMATIONAL RESPONSES below).
 
 For questions that require an actual calculation from dataset records, generate the appropriate formula.
@@ -728,8 +742,6 @@ Examples:
 - "How many users registered this year?"
 - "What is the total revenue?"
 - "Who are the top 5 users by transactions?"
-
-For these, "operation" must be "basic".
 
 For exploratory questions where the user does not specify exactly what they want to know, such as:
 
@@ -756,6 +768,7 @@ When a question can be answered directly from the available project, dataset, ta
 {
   "status": "informational",
   "formula": [],
+  "content": "<your informational response here in html format>",
   "response": {
     "template": "",
     "conclusion": "",
@@ -778,7 +791,6 @@ You may use only these operations:
 1. aggregate
 2. group_aggregate
 3. filter
-4. basic
 
 
 ============================================================
@@ -788,7 +800,7 @@ FORMULA STRUCTURE
 The formula must use exactly this structure:
 
 {
-  "operation": "aggregate | group_aggregate | filter | basic",
+  "operation": "aggregate | group_aggregate | filter",
   "main_table": "table name",
   "relationships": [],
   "filters": [],
@@ -926,42 +938,103 @@ Do NOT use users._id as the group_by.field.
 Do not add the same foreign key to group_by more than once.
 
 
-SHOWCASE_KEY:
+============================================================
+SHOWCASE_KEY AND SHOWCASE_ALIAS
+============================================================
 
-When a group_by field is a foreign key representing a relationship, add a "showcase_key" property to that specific group_by item.
+When a group_by field is a foreign key representing a relationship, the
+grouped value may need to be displayed in a human-readable form instead
+of showing the raw foreign-key ID.
 
-"showcase_key" must always be an array. It should contain the human-readable columns from the related table that should be used to display the grouped entity instead of its ID.
-Examples:
+In this case, use "showcase_key".
 
-{
-  "table": "transactions",
-  "field": "user",
-  "showcase_key": ["firstName"]
-}
+"showcase_key" must always be an array.
 
-or:
+It must contain one or more human-readable columns from the related table
+that can identify the grouped entity.
 
-{
-  "table": "transactions",
-  "field": "user",
-  "showcase_key": ["firstName", "lastName"]
-}
-
-or:
+Example:
 
 {
   "table": "transactions",
   "field": "user",
-  "showcase_key": ["firstName", "age"]
+  "showcase_key": ["first_name", "last_name"]
 }
-N/B showcase_key must be a column from the 'columns' data provided, be case sensitive too.
 
-Never use an ID or identifier column for showcase_key when a suitable human-readable column is available.
+The showcase_key fields MUST:
 
-If the group_by field is not a foreign key representing a relationship, do not add showcase_key.
+- Exist in the related table.
+- Be case sensitive and match the provided columns exactly.
+- Be suitable for identifying the grouped entity.
+- Never use an ID or identifier column when a suitable human-readable
+  column is available.
 
-"showcase_key" belongs inside the relevant group_by item. It must not be added as a top-level formula property.
-"showcase_key" must be a column in the foreign table related to the field being grouped by.
+If "showcase_key" is provided, "showcase_alias" is REQUIRED.
+
+"showcase_alias" is the response key used to represent the human-readable
+grouped entity.
+
+Example:
+
+{
+  "table": "transactions",
+  "field": "user",
+  "showcase_key": ["first_name", "last_name"],
+  "showcase_alias": "user_name"
+}
+
+The frontend will resolve the showcase_key values and expose them in the
+result using the showcase_alias.
+
+Therefore, when showcase_key is present:
+
+- Use showcase_alias as the placeholder for the grouped entity.
+- Do NOT use the raw foreign-key field as the placeholder.
+- Do NOT use showcase_key field names directly as placeholders.
+
+Example:
+
+"showcase_alias": "user_name"
+
+The response may use:
+
+{{user_name}}
+
+If the group_by field is NOT a foreign key, do not add showcase_key or
+showcase_alias.
+
+If showcase_key is NOT provided, the default response key for that
+group is the group_by.field itself.
+
+Example:
+
+{
+  "table": "competitions",
+  "field": "league_name"
+}
+
+The response may use:
+
+{{league_name}}
+
+Therefore:
+
+GROUP RESPONSE KEY RULE:
+
+1. group_by without showcase_key:
+   Response key = group_by.field
+
+2. group_by with showcase_key:
+   Response key = showcase_alias
+
+3. Never use the raw foreign-key group_by.field as the response
+   placeholder when showcase_alias exists.
+
+"showcase_alias" must be unique within the formula.
+
+"showcase_alias" belongs inside the relevant group_by item.
+
+Do not add showcase_alias as a top-level formula property.
 
 Do not change any other existing group_by behavior.
 
@@ -1249,51 +1322,217 @@ There are two response formats:
 
 SINGLE RESULT:
 
-If "limit" is 1, or the query clearly produces a single result, use only "template".
+If "limit" is 1, or the query clearly produces a single result, use only
+"template".
 
 Do NOT use "row_template".
 
-The template MUST contain placeholders for calculated values.
+The template should contain the placeholders required to describe the
+result.
 
 Example:
 
-"template": "<p>The user with the highest total transaction amount is {{total_amount}}.</p>",
+"template": "<p>The user with the highest total transaction amount is <strong>{{user_name}}</strong> with <strong>{{total_transaction_amount}}</strong> in transactions.</p>",
+
 "row_template": "",
+
 "conclusion": ""
-
-Only calculation aliases and post_aggregate aliases may be used as placeholders.
-
-For example:
-
-{{total_amount}}
-
-Do NOT use group_by field names, table names, column names, function names, or any other values as placeholders.
-
-The placeholder must exactly match an existing calculation alias or post_aggregate alias.
 
 
 MULTIPLE RESULTS:
 
-If the query can return more than one result, use "template" as the introduction and "row_template" to define how each result row should be displayed.
+If the query can return more than one result, use "template" as the
+introduction and "row_template" to define how each result row should be
+displayed.
 
 The template itself must NOT contain placeholders.
 
 Example:
 
-"template": "<p>Here are the top competitions by total entry fee:</p>",
+"template": "<p>Here are the top 5 competitions by total entry fee:</p>",
 
-"row_template": "<p><strong>{{total_entry_fee}}</strong> in entry fees from {{total_managers}} managers.</p>",
+"row_template": "<p><strong>{{league_name}}</strong> generated <strong>{{total_entry_fee}}</strong> in entry fees from <strong>{{total_managers}}</strong> managers.</p>",
 
 "conclusion": ""
 
-The frontend will repeat the row_template for each result row.
 
-Only calculation aliases and post_aggregate aliases may be used as placeholders.
+============================================================
+ALLOWED RESPONSE PLACEHOLDERS
+============================================================
 
-Do NOT use group_by fields, raw column names, table names, or any other values as placeholders.
+The following values may be used inside {{ }}:
+
+1. Calculation aliases
+2. Post-aggregate aliases
+3. group_by.field
+4. showcase_alias
 
 
-PLACEHOLDER RULE:
+CALCULATION ALIAS:
+
+A calculation alias may always be used.
+
+Example:
+
+{
+  "field": "amount",
+  "function": "sum",
+  "alias": "total_amount"
+}
+
+Use:
+
+{{total_amount}}
+
+
+POST-AGGREGATE ALIAS:
+
+A post-aggregate alias may always be used.
+
+Example:
+
+{
+  "function": "average",
+  "field": "monthly_signups",
+  "alias": "average_monthly_signups"
+}
+
+Use:
+
+{{average_monthly_signups}}
+
+
+GROUP_BY FIELD:
+
+A group_by field may be used as a response placeholder when the grouped
+entity needs to be identified in the response AND no showcase_key is
+provided.
+
+Example:
+
+{
+  "table": "competitions",
+  "field": "league_name"
+}
+
+Use:
+
+{{league_name}}
+
+Do NOT use the group_by.field as a response placeholder when that group
+has a showcase_alias.
+
+
+SHOWCASE_ALIAS:
+
+When a group_by item contains showcase_key and showcase_alias, the
+showcase_alias is the response placeholder for that grouped entity.
+
+Example:
+
+{
+  "table": "transactions",
+  "field": "user",
+  "showcase_key": ["first_name", "last_name"],
+  "showcase_alias": "user_name"
+}
+
+Use:
+
+{{user_name}}
+
+Do NOT use:
+
+{{user}}
+
+Do NOT use:
+
+{{first_name}}
+
+Do NOT use:
+
+{{last_name}}
+
+
+============================================================
+WHEN SHOULD THE GROUP KEY APPEAR IN THE RESPONSE?
+============================================================
+
+Only include a group key in the response when it is necessary to identify
+or distinguish each grouped result.
+
+For example:
+
+"top 5 competitions by entry fee"
+
+The response must identify each competition:
+
+"row_template":
+"<p><strong>{{league_name}}</strong> generated <strong>{{total_entry_fee}}</strong> in entry fees.</p>"
+
+
+However, if the grouped value does not need to be mentioned in the
+response because the result is summarized into a single value, do not
+include the group key.
+
+For example:
+
+"average monthly user registrations"
+
+The response can simply use:
+
+"template":
+"<p>On average, <strong>{{average_monthly_signups}}</strong> users registered each month.</p>"
+
+Do not add {{createdAt}} merely because createdAt was used for grouping.
+
+
+IMPORTANT:
+
+The existence of group_by does NOT automatically mean the group key must
+appear in the response.
+
+Use the group key only when the user needs to know which entity, category,
+period, or dimension each result belongs to.
+
+
+============================================================
+PLACEHOLDER RULES
+============================================================
+
+Every placeholder MUST exactly match an available response key.
+
+Available response keys are determined as follows:
+
+- calculation.alias
+- post_aggregate.alias
+- group_by.field when no showcase_alias exists
+- group_by.showcase_alias when showcase_key exists
+
+Never invent placeholder names.
+
+Never use table names as placeholders.
+
+Never use raw column names from showcase_key as placeholders.
+
+Never use a raw foreign-key group_by.field when showcase_alias exists.
+
+Do not include actual calculated values in the template or row_template.
+
+If the response is a single result, row_template MUST be an empty string.
+
+If the response contains multiple results:
+
+- template introduces the results.
+- row_template describes each result row.
+- row_template should include the group response key when necessary to
+  identify each row.
+
+Do not repeat the same information unnecessarily between template,
+row_template, and conclusion.
+
+The conclusion is optional and should only be included when it adds
+useful context.
 
 The ONLY values allowed inside {{ }} are calculation aliases or post_aggregate aliases.
 
@@ -1375,6 +1614,7 @@ Do not include any text before or after the JSON.
             formula: {},
             response: {
                 template: "",
+                row_template: "",
                 conclusion: "",
                 result: [],
             },
@@ -1396,6 +1636,7 @@ Do not include any text before or after the JSON.
             formula: {},
             response: {
                 template: "",
+                row_template: "",
                 conclusion: "",
                 result: [],
             },

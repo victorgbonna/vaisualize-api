@@ -6,7 +6,182 @@ const errorResponse = {
     message: "A valid chart configuration could not be generated from the available project data.",
   },
 };
+const sampleResponses = [
+  {
+    status: "success",
+    role:'assistant',
+    formula: {
+      operation: "aggregate",
+      main_table: "26_fanchallenger_db.users.json",
+      relationships: [],
+      filters: [],
+      group_by: [],
+      calculations: [
+        {
+          field: "_id",
+          function: "count",
+          alias: "monthly_signups",
+        },
+      ],
+      post_aggregate: {
+        function: "average",
+        field: "monthly_signups",
+        alias: "average_monthly_signups",
+      },
+      sort: [],
+      limit: 1,
+    },
+    response: {
+      template:
+        "<p>On average, <strong>{{average_monthly_signups}}</strong> users registered each month.</p>",
+      row_template: "",
+      conclusion: "",
+    },
+    pending_questions: [],
+  },
 
+  {
+    status: "success",
+    role:'assistant',
+    formula: {
+      operation: "group_aggregate",
+      main_table: "fanchallenger_db.competitions.csv",
+      relationships: [],
+      filters: [],
+      group_by: [
+        {
+          table: "fanchallenger_db.competitions.csv",
+          field: "league_name",
+          showcase_key: [],
+        },
+      ],
+      calculations: [
+        {
+          field: "entry_fee",
+          function: "sum",
+          alias: "total_entry_fee",
+        },
+        {
+          field: "no_of_managers",
+          function: "sum",
+          alias: "total_managers",
+        },
+      ],
+      post_aggregate: null,
+      sort: [
+        {
+          field: "total_entry_fee",
+          direction: "desc",
+        },
+      ],
+      limit: 5,
+    },
+    response: {
+      template:
+        "<p>Here are the top 5 competitions by total entry fee:</p>",
+      row_template:
+        "<p>{{league_name}}: <strong>{{total_entry_fee}}</strong> in entry fees from <strong>{{total_managers}}</strong> managers.</p>",
+      conclusion: "",
+    },
+    pending_questions: [],
+  },
+
+  {
+    status: "success",
+    role:'assistant',
+    formula: {
+      operation: "group_aggregate",
+      main_table: "26_fanchallenger_db.transactions.csv",
+      relationships: [
+        {
+          from_table: "26_fanchallenger_db.transactions.csv",
+          from_column: "user",
+          to_table: "26_fanchallenger_db.users.json",
+          to_column: "_id",
+        },
+      ],
+      filters: [],
+      group_by: [
+        {
+          table: "26_fanchallenger_db.transactions.csv",
+          field: "user",
+          showcase_key: ["first_name", "last_name"],
+          showcase_alias: "username",
+        },
+      ],
+      calculations: [
+        {
+          field: "amount",
+          function: "sum",
+          alias: "total_transaction_amount",
+        },
+      ],
+      post_aggregate: null,
+      sort: [
+        {
+          field: "total_transaction_amount",
+          direction: "desc",
+        },
+      ],
+      limit: 1,
+    },
+    response: {
+      template:
+        "<p>The user with the highest total transaction amount is <strong>{{total_transaction_amount}} by {{username}}</strong> in transactions.</p>",
+      row_template: "",
+      conclusion: "",
+    },
+    pending_questions: [],
+  },
+
+  {
+    status: "success",
+    role:'assistant',
+    formula: {
+      operation: "aggregate",
+      main_table: "26_fanchallenger_db.transactions.csv",
+      relationships: [
+        {
+          from_table: "26_fanchallenger_db.transactions.csv",
+          from_column: "user",
+          to_table: "26_fanchallenger_db.users.json",
+          to_column: "_id",
+        },
+      ],
+      filters: [
+        {
+          table: "26_fanchallenger_db.users.json",
+          field: "favourite_team",
+          operator: "=",
+          value: "Arsenal",
+        },
+      ],
+      group_by: [],
+      calculations: [
+        {
+          field: "amount",
+          function: "sum",
+          alias: "total_deposits",
+        },
+        {
+          field: "amount",
+          function: "sum",
+          alias: "total_withdrawals",
+        },
+      ],
+      post_aggregate: null,
+      sort: [],
+      limit: 1,
+    },
+    response: {
+      template:
+        "<p>Arsenal supporters made <strong>{{total_deposits}}</strong> in deposits and <strong>{{total_withdrawals}}</strong> in withdrawals.</p>",
+      row_template: "",
+      conclusion: "",
+    },
+    pending_questions: [],
+  },
+];
 module.exports = async function (req, res, next) {
   try {
     const { input, project, existingConversations} = req.body || {};
@@ -14,8 +189,9 @@ module.exports = async function (req, res, next) {
     //   user_id: req.user._id,
     //   project_id: project._id,
     // }).sort({ createdAt: -1 }).skip(+input).lean();
-    
+    // const conversa= sampleResponses[+input];
     // return res.status(200).json({ conversation: conversa });
+    
     await Conversation.create({
       user_id: req.user._id,
       project_id: project._id,

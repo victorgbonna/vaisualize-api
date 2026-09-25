@@ -66,6 +66,10 @@ const GroupBySchema = new Schema(
       type: [String],
       required: false,
     },
+    showcase_alias: {
+      type: String,
+      required: false,
+    },
   },
   { _id: false }
 );
@@ -215,6 +219,7 @@ const ConversationSchema = new Schema(
         "clarification_required",
         "unsupported",
         "error",
+        'informational'
       ],
       default: "success",
     },
