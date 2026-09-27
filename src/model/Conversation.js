@@ -41,7 +41,7 @@ const FilterSchema = new Schema(
     },
     value: {
       type: Schema.Types.Mixed,
-      required: true,
+      required: false,
     },
   },
   { _id: false }
@@ -83,6 +83,10 @@ const CalculationSchema = new Schema(
     function: {
       type: String,
       required: true,
+    },
+    group_by: {
+      type: String,
+      required: false ,
     },
     alias: {
       type: String,
@@ -173,6 +177,10 @@ const ResponseSchema = new Schema(
       type: String,
       default: "",
     },
+    row_template: {
+      type: String,
+      default: "",
+    },
     conclusion:{
       type: String,
       default: "",
@@ -193,7 +201,10 @@ const ConversationSchema = new Schema(
       required: true,
       index: true,
     },
-
+    messageIndex: {
+      type: Number,
+      default: 0,
+    },
     project_id: {
       type: Schema.Types.ObjectId,
       ref: "Project",

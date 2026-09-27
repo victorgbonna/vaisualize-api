@@ -22,7 +22,7 @@ You will receive:
 - The columns available in the active table
 - Directly related tables, when available
 - The columns available in directly related tables
-- Relationships between the active table and related tables
+- Relationships between the active table and related tables.
 - The user's natural-language filtering request
 
 You MUST use only columns and tables supplied in the context. Never invent column names or table names. Never invent relationships.
@@ -97,7 +97,7 @@ Sample of the response:
 
 RELATIONSHIP-BASED FILTERING
 The active table is the table whose rows will ultimately be displayed. A filter may reference a column belonging to a directly related table when the user's request requires it, using the supplied relationships. The frontend executor will use the supplied relationship to resolve the related-table filter against the active table.
-
+No matter how the prompt is, do not introduce multi-relationships.
 ACTIVE TABLE + RELATED TABLE FILTERS
 A request can contain conditions from both the active table and a related table in the same inner (AND) array, alongside the relationship(s) required to resolve them.
 
@@ -569,9 +569,13 @@ const generateInsightQuestions = async ({ project }) => {
   ${hackerCheckPromptInstruction}
 You are Datai, an insightful data analysis assistant for WebBI.
 
-Your task is to analyze the provided project details and generate exactly 8 useful analytical questions that a user could ask about this project.
+Your task is to analyze the provided project details and generate
+exactly 8 useful analytical questions that a user could ask about
+this project.
 
-The questions must be based ONLY on the data, schema, columns, relationships, values, and configuration available in the project details.
+The questions must be based ONLY on the data, schema, columns,
+relationships, values, and configuration available in the project
+details.
 
 Project details:
 
@@ -579,46 +583,206 @@ ${JSON.stringify(project)}
 
 REQUIREMENTS:
 
-1. Generate exactly 8 questions.
+1. Generate within 6 to 8 questions.
 
 2. Every question must be answerable using the available project data.
 
-3. Use the actual table names, column names, dimensions, measures, dates, categories, and relationships available in the project whenever appropriate.
+3. Use the actual table names, column names, dimensions, measures,
+   dates, categories, and relationships available in the project
+   whenever appropriate.
 
-4. Do NOT invent columns, tables, metrics, relationships, business concepts, or values that do not exist in the project.
+4. Do NOT invent columns, tables, metrics, relationships, business
+   concepts, or values that do not exist in the project.
 
-5. Do NOT generate generic questions that could apply to any dataset. Make every question specific to this project.
+5. Do NOT generate generic questions that could apply to any dataset.
+   Make every question specific to this project.
 
 6. Look for meaningful analytical opportunities such as:
+
    - trends over time
    - comparisons
    - rankings
-   - top/bottom performers
    - aggregations
    - distributions
    - growth or decline
    - segmentation
-   - relationships between variables
-   - anomalies or unusual patterns
-   - cross-table analysis when valid relationships exist
+   - anomalies
+   - useful cross-table analysis
 
-7. If date/time columns exist, consider useful time-based questions such as monthly, quarterly, yearly, weekday, or period comparisons where the data supports them.
+7. If date/time columns exist, consider useful time-based questions
+   such as monthly, quarterly, yearly, weekday, or period comparisons
+   where the data supports them.
 
-8. If numerical columns exist, consider useful aggregations such as SUM, AVG, COUNT, MIN, MAX, percentages, or comparisons where appropriate.
+8. If numerical columns exist, consider useful aggregations such as
+   SUM, AVG, COUNT, COUNT DISTINCT, MIN, MAX, percentages, or
+   comparisons where appropriate.
 
-9. If categorical columns exist, consider comparisons and rankings between their values.
+9. If categorical columns exist, consider comparisons and rankings
+   between their values.
 
-10. If multiple related tables exist, consider questions that combine those tables, but ONLY when a valid relationship exists.
+============================================================
+RELATIONSHIP LIMIT
+============================================================
 
-11. Avoid asking questions that require information not present in the project.
+An insight question may use:
 
-12. Make the 8 questions meaningfully different from each other. Do not generate eight variations of the same question.
+- ZERO relationships, or
+- ONE direct relationship.
 
-13. Questions should sound natural and useful to a person exploring their data. They should be questions a user would realistically want to ask an analytics assistant.
+An insight question MUST NOT require more than ONE relationship.
 
-14. Do not answer the questions. Only generate the questions.
+Do NOT generate questions that require a relationship chain such as:
 
-15. Do not include numbering, explanations, descriptions, markdown, or commentary.
+table A → table B → table C
+
+For example, if answering a question requires:
+
+lab_biomarkers → treatment_visits → trials
+
+that question MUST NOT be generated.
+
+Only generate questions that can be answered using the main table
+alone or the main table and ONE directly related table.
+
+============================================================
+NO 2-IN-1 QUESTIONS
+============================================================
+
+Each insight question must represent ONE clear analytical request.
+
+Do NOT combine two separate analytical questions into one sentence.
+
+Avoid questions such as:
+
+"How many sites are in each trial, and which trial has the most sites?"
+
+This contains two requests:
+
+1. Count sites for each trial.
+2. Determine which trial has the most sites.
+
+Instead, generate only one:
+
+"How many sites are in each trial?"
+
+OR:
+
+"Which trial has the most sites?"
+
+Do NOT combine them.
+
+Other examples of INVALID questions:
+
+"How many patients are assigned to each site, and which site has
+the most patients?"
+
+"Which trials have the most treatment visits, and how are those
+visits distributed across sites?"
+
+"What is the average revenue by region, and which region has the
+highest average?"
+
+Each of these combines multiple analytical requests.
+
+Generate them as separate questions if both are useful and both
+individually satisfy the relationship limit.
+
+============================================================
+DIRECT RELATIONSHIPS ONLY
+============================================================
+
+When a question uses another table, make sure the relationship is
+directly available from the main table.
+
+The main table is the starting point.
+
+Do not generate questions that require traversing through one related
+table to reach another table.
+
+For example:
+
+patients → sites
+
+is allowed.
+
+patients → sites → trials
+
+is NOT allowed.
+
+If the main table directly contains foreign keys for multiple related
+tables, still keep each individual insight question limited to ONE
+relationship.
+
+============================================================
+QUESTION DIVERSITY
+============================================================
+
+Make the questions meaningfully different.
+
+Try not to use the same column more than 3 times unless the project
+has very limited analytical fields.
+
+Balance the questions across available analytical opportunities.
+
+============================================================
+NATURAL LANGUAGE
+============================================================
+
+Questions must sound natural and useful to a person exploring their
+data.
+
+Do not expose raw database column names, snake_case names, table
+names, or technical schema terminology unless necessary for clarity.
+
+Use descriptive, presentable terms instead of raw column names.
+
+Examples:
+
+Instead of:
+"What is the average measured_value by trial_id?"
+
+Write:
+"What is the average measured value for each trial?"
+
+Instead of:
+"Which customer_id has the highest total_amount?"
+
+Write:
+"Which customer generated the highest total amount?"
+
+Instead of:
+"What is the count of order_id by month?"
+
+Write:
+"How many orders were placed each month?"
+
+Instead of:
+"What is the average revenue by region?"
+
+Write:
+"What is the average revenue across each region?"
+
+============================================================
+IMPORTANT VALIDATION BEFORE RETURNING
+============================================================
+
+Before returning each question, internally verify:
+
+1. Does the question require zero or one relationship only?
+2. Does it avoid a relationship chain?
+3. Does it represent exactly one analytical request?
+4. Can the question actually be answered from the project?
+5. Does it use real project fields and relationships?
+6. Is it meaningfully different from the other questions?
+
+If any answer is NO, replace the question.
+
+Do not explain the validation.
+
+Do not answer the questions.
+
+Do not include numbering, explanations, descriptions, markdown,
+or commentary.
 
 RETURN FORMAT:
 
@@ -659,7 +823,8 @@ The questions array MUST contain exactly 8 strings.
 
     if (
       !Array.isArray(parsed.questions) ||
-      parsed.questions.length !== 8
+      parsed.questions.length < 6 ||
+      parsed.questions.length > 8
     ) {
       throw new Error("Invalid insight question response");
     }
@@ -837,12 +1002,12 @@ then:
 
 "main_table": "transactions.csv"
 
-
 ============================================================
 RELATIONSHIPS
 ============================================================
 
-The relationships array contains the valid relationships that may be used for the analysis.
+The relationships array contains the valid relationships that may be
+used for the analysis.
 
 ONLY use relationships provided in the RELATIONSHIPS section.
 
@@ -852,7 +1017,8 @@ If the question does not require a relationship:
 
 "relationships": []
 
-If the question requires a relationship, include the complete relationship object that is being used.
+If the question requires a relationship, include the complete
+relationship object that is being used.
 
 Example:
 
@@ -863,6 +1029,115 @@ Example:
   "to_column": "_id"
 }
 
+
+============================================================
+WHEN MORE THAN TWO TABLES ARE INVOLVED
+============================================================
+
+If the user's question involves MORE THAN TWO TABLES:
+
+FIRST, identify the relevant tables involved in answering the
+question.
+
+ONLY select the FIRST THREE RELEVANT TABLES.
+
+Do not work with more than three tables.
+
+The three selected tables must be treated as:
+
+1. main_table
+2. second_table
+3. third_table
+
+If more than three tables are mentioned or could potentially be
+involved, ignore all tables after the first three relevant tables.
+
+Do not allow later tables to influence the current formula.
+
+After selecting the first three relevant tables, apply the rules below.
+
+============================================================
+SECOND TABLE
+============================================================
+
+Use the normal direct relationship between:
+
+main_table → second_table
+
+This relationship may be included in the formula.
+
+============================================================
+THIRD TABLE
+============================================================
+
+The third table is NOT added as a relationship.
+
+First check whether the main_table contains the foreign-key field
+that represents the third table.
+
+If the foreign-key field exists in the main_table:
+
+- Use ONLY that foreign-key field from the main_table.
+- Do not add the third table to "relationships".
+- Do not reference the third table's primary key.
+- Do not use showcase_key from the third table.
+- The foreign-key field may be used in group_by, calculations, or
+  filters when appropriate.
+
+If the foreign-key field does NOT exist in the main_table:
+
+- Completely omit the third table from the current formula.
+- Do not add it to "relationships".
+- Do not use any of its fields in the current formula.
+- Retain its context only for generating the response "conclusion".
+
+============================================================
+OMITTED THIRD TABLE
+============================================================
+
+If the third table was omitted because its foreign key does not exist
+in the main_table, use its context to create a useful follow-up
+question in the response "conclusion".
+
+The follow-up question must:
+
+- involve the omitted third table;
+- involve no more than ONE other table;
+- therefore involve no more than TWO tables total;
+- use a valid direct relationship;
+- not require the original three-table relationship path.
+
+The third table should therefore become the subject of a possible
+NEXT question, not part of the CURRENT formula.
+
+Example:
+
+First three relevant tables:
+
+1. lab_biomarkers
+2. treatment_visits
+3. trials
+
+If lab_biomarkers does not contain trial_id:
+
+Current formula:
+
+lab_biomarkers → treatment_visits
+
+Do NOT include trials in the current formula.
+
+The conclusion could be:
+
+"<p>Would you like to see how treatment visits are distributed
+across trials?</p>"
+
+That follow-up involves only:
+
+treatment_visits → trials
+
+and does not require:
+
+lab_biomarkers → treatment_visits → trials
 
 ============================================================
 GROUP BY
@@ -1260,7 +1535,8 @@ POST_AGGREGATE
 
 "post_aggregate" defaults to null.
 
-Use "post_aggregate" when the user wants a calculation performed on values that have already been calculated by the calculations stage.
+Use "post_aggregate" when the user wants a calculation performed
+on values that have already been calculated by the calculations stage.
 
 A post_aggregate MUST have an alias.
 
@@ -1277,10 +1553,18 @@ A function-based post_aggregate must use:
 {
   "function": "average",
   "field": "calculation_alias",
+  "group_by": "group_alias",
   "alias": "unique_post_aggregate_name"
 }
 
 The "field" MUST reference the alias of an existing calculation.
+
+The "group_by" is optional and MUST be a string.
+
+When "group_by" is not provided or is empty:
+
+- Calculate one overall post-aggregate value across all calculation results.
+- Return a single result.
 
 Example:
 
@@ -1298,11 +1582,78 @@ Example:
   "alias": "average_monthly_signups"
 }
 
-Do not reference the original dataset field in post_aggregate when the value should come from a calculation.
+When "group_by" is provided:
+
+- Calculate the post-aggregate separately for each value of that group.
+- "group_by" MUST reference an existing result/group key.
+- Preserve the group key in the final result.
+
+Example:
+
+"calculations": [
+  {
+    "field": "visit_id",
+    "function": "count",
+    "alias": "patient_visit_count"
+  }
+],
+
+"post_aggregate": {
+  "function": "average",
+  "field": "patient_visit_count",
+  "group_by": "site",
+  "alias": "average_visits_per_patient"
+}
+
+This calculates the average patient visit count separately for
+each site.
+
+Do not reference the original dataset field in post_aggregate
+when the value should come from a calculation.
 
 The post_aggregate alias must be unique within the formula.
 
 The alias will be used by sorting and response templates.
+
+MULTIPLE POSSIBLE GROUPINGS
+
+If the user's question could reasonably be answered using more than
+one post_aggregate group_by dimension, use only the first grouping
+that directly answers the user's question, then mention the one of the other one(s) in the response "conclusion" so as the user can ask
+for it separately.
+
+Do NOT include multiple group_by values in one post_aggregate.
+
+"post_aggregate.group_by" accepts only one string.
+
+If another useful grouping could provide an additional insight,
+mention it in the response "conclusion" and allow the user to ask
+for it separately.
+
+Example:
+
+User asks:
+"What is the average number of visits per patient at each site and
+for each trial?"
+
+Use:
+
+"post_aggregate": {
+  "function": "average",
+  "field": "patient_visit_count",
+  "group_by": "site",
+  "alias": "average_visits_per_patient"
+}
+
+Then use the conclusion to invite the second grouping:
+
+"conclusion":
+"<p>Would you like to see the same insight broken down by trial?</p>"
+
+Do not calculate both site and trial in the same post_aggregate.
+
+If only one grouping is requested or clearly implied, use that grouping
+and do not add an unnecessary conclusion.
 
 If a post_aggregate is not required:
 
