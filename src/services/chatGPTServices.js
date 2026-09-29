@@ -302,12 +302,14 @@ function formatProjectDetailsForPrompt(project_details = {}) {
         .map((dataset, index) => {
           const columns = dataset.columns || {};
           return `
+                    datasets: projectState?.datasets?.map(({file_name, first_five_rows, total_rows, file_size, columns}) => ({file_name, first_five_rows, total_rows, file_size, columns})),
+
 Dataset ${index + 1}:
 - file_name: ${dataset.file_name}
 - file_url: ${dataset.file_url}
 - file_size: ${dataset.file_size}
+- random_five_rows(use this to understand the dataset's field naming and values for equality and non-equality checks): ${JSON.stringify(dataset.first_five_rows || [])} 
 - total_rows: ${dataset.total_rows}
-- all_columns: ${JSON.stringify(columns.all_columns || [])}
 - active_columns: ${JSON.stringify(columns.active_columns || [])}
 - column_data_types: ${JSON.stringify(columns.column_data_types || [])}`.trim();
         })

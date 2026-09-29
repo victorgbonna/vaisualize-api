@@ -23,6 +23,7 @@ const DatasetSchema = new Schema(
     total_rows: { type: Number, required: true },
     file_url: { type: String, required: true },
     columns: { type: ColumnsSchema, required: true },
+    
     first_five_rows: { type: [Schema.Types.Mixed], required: true },
     proj_title: {
       type: String,
