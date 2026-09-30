@@ -188,7 +188,7 @@ ${payload?.prompt || ""}
         },
       ],
     });
-
+    console.log("OpenAI response:", response?.output_text);
     return response?.output_text ? JSON.parse(response.output_text) : fallback;
   } catch (error) {
     console.error("Error generating filter plan:", error);
