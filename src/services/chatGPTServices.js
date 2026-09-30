@@ -168,6 +168,9 @@ ${JSON.stringify(payload?.activeTable || {})}
 Related tables:
 ${JSON.stringify(payload?.relatedTables || [])}
 
+Random(use this to understand the dataset's field naming and values for equality and non-equality checks):
+${JSON.stringify(payload?.first_five_rows || [])}
+
 Relationships:
 ${JSON.stringify(payload?.relationships || [])}
 

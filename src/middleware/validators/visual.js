@@ -109,6 +109,8 @@ const generateFilterPlanSchema = validator(
     relatedTables: Joi.array().items(filterTableDefSchema).optional(),
     relationships: Joi.array().items(filterRelationshipDefSchema).optional(),
     prompt: Joi.string().trim().min(1).required(),
+    // dataset_id: Joi.string().required(),
+    first_five_rows: Joi.array().items(Joi.object()).optional(),
   })
 );
 
