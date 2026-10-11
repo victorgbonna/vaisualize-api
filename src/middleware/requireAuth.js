@@ -13,8 +13,9 @@ const requireAuth = async ( req, res, next ) => {
 
     const token = authorization.split(' ')[1]
     try{
+        console.log({token,a:process.env.APP_SECRET_KEY, authorization})
         const {_id} = jwt.verify( token, process.env.APP_SECRET_KEY )
-       
+        
         let user = await User.findOne({_id}).lean()  
 
         const { error: status_error } = checkUserAccountStatus(user.status);
